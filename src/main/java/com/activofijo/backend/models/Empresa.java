@@ -7,17 +7,19 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "empresas")
+@Table(name = "empresas",
+       uniqueConstraints = @UniqueConstraint(name = "unq_empresa_nombre", columnNames = {"nombre"})
+)
 public class Empresa {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "nombre", nullable = false, unique = true)
+    @Column(name = "nombre", nullable = false, unique = true, length = 100)
     private String nombre;
 
-    @Column(name = "rfc")
+    @Column(name = "rfc", length = 50)
     private String rfc;
 
     @CreationTimestamp
@@ -28,16 +30,14 @@ public class Empresa {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Constructor vacío
+    // Constructors, getters, setters
     public Empresa() {}
 
-    // Constructor con campos
     public Empresa(String nombre, String rfc) {
         this.nombre = nombre;
         this.rfc = rfc;
     }
 
-    // Getters y Setters
     public Long getId() {
         return id;
     }
@@ -70,3 +70,4 @@ public class Empresa {
         return updatedAt;
     }
 }
+

@@ -1,120 +1,158 @@
 package com.activofijo.backend.services;
 
-import com.activofijo.backend.DTO.UsuarioDTO;
+import com.activofijo.backend.dto.UsuarioCreateDTO;
+import com.activofijo.backend.dto.UsuarioDTO;
+import com.activofijo.backend.exception.BadRequestException;
+import com.activofijo.backend.exception.NotFoundException;
+//import com.activofijo.backend.models.Empresa;
 import com.activofijo.backend.models.Rol;
 import com.activofijo.backend.models.Usuario;
-import com.activofijo.backend.repository.UsuarioRepository;
+import com.activofijo.backend.repository.EmpresaRepository;
 import com.activofijo.backend.repository.RolRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.activofijo.backend.repository.UsuarioRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
-import java.time.LocalDateTime;
+//import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class UsuarioService {
 
-    @Autowired
-    private UsuarioRepository usuarioRepository;
+    private final UsuarioRepository usuarioRepo;
+    private final RolRepository rolRepo;
+    private final EmpresaRepository empresaRepo;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private RolRepository rolRepository;
-
-    public Usuario registrarUsuario(Usuario usuario) {
-        // Encriptar contraseña
-        usuario.setContrasena(passwordEncoder.encode(usuario.getContrasena()));
-        return usuarioRepository.save(usuario);
+    public UsuarioService(UsuarioRepository usuarioRepo,
+                          RolRepository rolRepo,
+                          EmpresaRepository empresaRepo,
+                          PasswordEncoder passwordEncoder) {
+        this.usuarioRepo = usuarioRepo;
+        this.rolRepo = rolRepo;
+        this.empresaRepo = empresaRepo;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    public Usuario crearUsuario(UsuarioDTO dto) throws Exception {
-        if (usuarioRepository.findByUsuario(dto.getUsuario()).isPresent()) {
-            throw new Exception("El nombre de usuario ya existe.");
+    /**
+     * Lista todos los usuarios de una empresa.
+     */
+    @Transactional(readOnly = true)
+    public List<UsuarioDTO> listAll(Long empresaId) {
+        empresaRepo.findById(empresaId)
+                   .orElseThrow(() -> new NotFoundException("Empresa no encontrada: " + empresaId));
+        return usuarioRepo.findByEmpresaId(empresaId)
+                          .stream()
+                          .map(this::toDTO)
+                          .collect(Collectors.toList());
+    }
+
+    /**
+     * Lista todos los usuarios activos de una empresa.
+     */
+    @Transactional(readOnly = true)
+    public List<UsuarioDTO> listActive(Long empresaId) {
+        empresaRepo.findById(empresaId)
+                   .orElseThrow(() -> new NotFoundException("Empresa no encontrada: " + empresaId));
+        return usuarioRepo.findByEmpresaIdAndActivoTrue(empresaId)
+                          .stream()
+                          .map(this::toDTO)
+                          .collect(Collectors.toList());
+    }
+
+    /**
+     * Busca un usuario por su nombre de usuario y empresa.
+     */
+    @Transactional(readOnly = true)
+    public UsuarioDTO findByUsuario(String usuario, Long empresaId) {
+        return usuarioRepo.findByUsuarioAndEmpresaId(usuario, empresaId)
+                          .map(this::toDTO)
+                          .orElseThrow(() -> new NotFoundException(
+                              "Usuario '" + usuario + "' no encontrado en empresa " + empresaId));
+    }
+
+    /**
+     * Busca un usuario por su ID.
+     */
+    @Transactional(readOnly = true)
+    public UsuarioDTO findById(Long id) {
+        return usuarioRepo.findById(id)
+                          .map(this::toDTO)
+                          .orElseThrow(() -> new NotFoundException(
+                              "Usuario con id " + id + " no encontrado"));
+    }
+
+    /**
+     * Actualiza un usuario existente. Permite cambiar usuario, nombre completo,
+     * email, contraseña y rol.
+     */
+    @Transactional
+    public UsuarioDTO update(Long id, UsuarioCreateDTO dto) {
+        Usuario u = usuarioRepo.findById(id)
+            .orElseThrow(() -> new NotFoundException("Usuario con id " + id + " no encontrado"));
+
+        // Validar unicidad si cambian usuario o email
+        if (!u.getUsuario().equals(dto.getUsuario())
+            && usuarioRepo.findByUsuarioAndEmpresaId(dto.getUsuario(), u.getEmpresa().getId()).isPresent()) {
+            throw new BadRequestException("Ya existe otro usuario con ese nombre en la empresa");
+        }
+        if (!u.getEmail().equals(dto.getEmail())
+            && usuarioRepo.findByEmailAndEmpresaId(dto.getEmail(), u.getEmpresa().getId()).isPresent()) {
+            throw new BadRequestException("Ya existe otro usuario con ese email en la empresa");
         }
 
-        if (dto.getEmail() != null && usuarioRepository.findByEmail(dto.getEmail()).isPresent()) {
-            throw new Exception("El email ya está registrado.");
+        // Aplicar cambios
+        u.setUsuario(dto.getUsuario());
+        u.setNombreCompleto(dto.getNombreCompleto());
+        u.setEmail(dto.getEmail());
+        if (dto.getContrasena() != null && !dto.getContrasena().isBlank()) {
+            u.setContrasena(passwordEncoder.encode(dto.getContrasena()));
+        }
+        // opcional: permitir cambiar de rol
+        if (!u.getRol().getId().equals(dto.getRolId())) {
+            Rol rol = rolRepo.findById(dto.getRolId())
+                             .orElseThrow(() -> new NotFoundException("Rol no encontrado: " + dto.getRolId()));
+            u.setRol(rol);
         }
 
-        Rol rol = rolRepository.findById(dto.getRolId())
-                .orElseThrow(() -> new Exception("Rol no encontrado"));
-
-        Usuario usuario = new Usuario();
-        usuario.setUsuario(dto.getUsuario());
-        usuario.setNombreCompleto(dto.getNombreCompleto());
-        usuario.setEmail(dto.getEmail());
-        usuario.setContrasena(dto.getContrasena()); // Aquí podrías usar BCrypt
-        usuario.setRol(rol);
-        usuario.setFechaCreacion(LocalDateTime.now());
-        usuario.setActivo(true);
-
-        return usuarioRepository.save(usuario);
+        Usuario saved = usuarioRepo.save(u);
+        return toDTO(saved);
     }
 
-    public Usuario actualizarUsuario(Long id, Usuario datosActualizados) {
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + id));
-    
-        usuario.setNombreCompleto(datosActualizados.getNombreCompleto());
-        usuario.setUsuario(datosActualizados.getUsuario());
-        usuario.setEmail(datosActualizados.getEmail());
-        usuario.setRol(datosActualizados.getRol());
-        
-        
-        // Si deseas permitir actualizar contraseña (opcional y con encoding):
-        if (datosActualizados.getContrasena() != null && !datosActualizados.getContrasena().isEmpty()) {
-            usuario.setContrasena(passwordEncoder.encode(datosActualizados.getContrasena()));
-        }
-    
-        return usuarioRepository.save(usuario);
-    }
-    
-
-    public Optional<Usuario> buscarPorUsuario(String usuario) {
-        return usuarioRepository.findByUsuario(usuario);
+    /**
+     * Activa un usuario (set activo = true).
+     */
+    @Transactional
+    public void activate(Long id) {
+        Usuario u = usuarioRepo.findById(id)
+            .orElseThrow(() -> new NotFoundException("Usuario con id " + id + " no encontrado"));
+        u.setActivo(true);
+        usuarioRepo.save(u);
     }
 
-    public List<Usuario> listarUsuarios() {
-        return usuarioRepository.findAllByOrderByIdAsc();  // cambio realizado para devolver los usuarios en orden
+    /**
+     * Desactiva un usuario (set activo = false).
+     */
+    @Transactional
+    public void deactivate(Long id) {
+        Usuario u = usuarioRepo.findById(id)
+            .orElseThrow(() -> new NotFoundException("Usuario con id " + id + " no encontrado"));
+        u.setActivo(false);
+        usuarioRepo.save(u);
     }
 
-    
-
-    public boolean existePorUsuario(String usuario) {
-        return usuarioRepository.existsByUsuario(usuario);
+    private UsuarioDTO toDTO(Usuario u) {
+        UsuarioDTO dto = new UsuarioDTO();
+        dto.setId(u.getId());
+        dto.setUsuario(u.getUsuario());
+        dto.setNombreCompleto(u.getNombreCompleto());
+        dto.setEmail(u.getEmail());
+        dto.setRolId(u.getRol().getId());
+        dto.setEmpresaId(u.getEmpresa().getId());
+        dto.setFechaUltimoAcceso(u.getFechaUltimoAcceso());
+        dto.setActivo(u.getActivo());
+        return dto;
     }
-
-    public boolean existePorEmail(String email) {
-        return usuarioRepository.existsByEmail(email);
-    }
-
-    // Desactivar y activar usuarios
-public Usuario desactivarUsuario(Long id) {
-    Usuario usuario = usuarioRepository.findById(id)
-        .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-    usuario.setActivo(false);
-    return usuarioRepository.save(usuario);
-}
-
-public Usuario activarUsuario(Long id) {
-    Usuario usuario = usuarioRepository.findById(id)
-        .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-    usuario.setActivo(true);
-    return usuarioRepository.save(usuario);
-}
-
-public List<Usuario> listarActivos() {
-    return usuarioRepository.findByActivoTrue();
-}
-
-public Usuario obtenerPorId(Long id) {
-    return usuarioRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + id));
-}
-
-
 }

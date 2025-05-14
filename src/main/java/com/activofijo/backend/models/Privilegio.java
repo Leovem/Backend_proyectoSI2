@@ -4,26 +4,29 @@ import jakarta.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 @Entity
-@Table(name = "privilegios")
+@Table(name = "privilegios",
+       uniqueConstraints = @UniqueConstraint(name = "unq_nombre_privilegio", columnNames = {"nombre"})
+)
 public class Privilegio {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "nombre", nullable = false, unique = true)
     private String nombre;
 
-    // Relación con Role
-    
-    @ManyToMany(mappedBy = "privilegios")
-    @JsonIgnore
+    @ManyToMany(mappedBy = "privilegios", fetch = FetchType.LAZY)
     private Set<Rol> roles = new HashSet<>();
 
-    // Getters y Setters
+    // Constructors, getters, setters
+    public Privilegio() {}
+
+    public Privilegio(String nombre) {
+        this.nombre = nombre;
+    }
+
     public Long getId() {
         return id;
     }

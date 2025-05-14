@@ -1,20 +1,24 @@
-package com.activofijo.backend.DTO;
+package com.activofijo.backend.dto;
 
+import jakarta.validation.constraints.NotBlank;
+
+/**
+ * DTO para exponer datos básicos de un Privilegio.
+ */
 public class PrivilegioDTO {
 
     private Long id;
+
+    @NotBlank(message = "El nombre del privilegio no puede estar vacío")
     private String nombre;
 
-    // ✅ Constructor con parámetros
+    public PrivilegioDTO() {}
+
     public PrivilegioDTO(Long id, String nombre) {
         this.id = id;
         this.nombre = nombre;
     }
 
-    // ✅ Constructor vacío (opcional pero útil)
-    public PrivilegioDTO() {}
-
-    // Getters y Setters
     public Long getId() {
         return id;
     }

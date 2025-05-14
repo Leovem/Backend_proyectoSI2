@@ -1,9 +1,15 @@
 package com.activofijo.backend.controller;
 
-import com.activofijo.backend.models.Usuario;
+import com.activofijo.backend.dto.UsuarioCreateDTO;
+import com.activofijo.backend.dto.UsuarioDTO;
+import com.activofijo.backend.security.JwtUtil;
 import com.activofijo.backend.services.UsuarioService;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -12,44 +18,92 @@ import java.util.List;
 @RequestMapping("/api/usuarios")
 public class UsuarioController {
 
-    @Autowired
-    private UsuarioService usuarioService;
+    private static final Logger logger = LoggerFactory.getLogger(UsuarioController.class);
+
+    private final UsuarioService usuarioService;
+    private final JwtUtil jwtUtil;
+
+    public UsuarioController(UsuarioService usuarioService, JwtUtil jwtUtil) {
+        this.usuarioService = usuarioService;
+        this.jwtUtil = jwtUtil;
+    }
+
+    private Long getAuthenticatedUserEmpresaId() {
+        String token = (String) SecurityContextHolder.getContext()
+            .getAuthentication()
+            .getCredentials();
+        return jwtUtil.getEmpresaIdFromToken(token);
+    }
 
     @GetMapping
-    public ResponseEntity<List<Usuario>> listarTodos() {
-        return ResponseEntity.ok(usuarioService.listarUsuarios());
+    public ResponseEntity<List<UsuarioDTO>> listAll() {
+        Long empresaId = getAuthenticatedUserEmpresaId();
+        logger.info("📋 listAll usuarios para empresaId={}", empresaId);
+        List<UsuarioDTO> list = usuarioService.listAll(empresaId);
+        return ResponseEntity.ok(list);
     }
-    // ✅ Obtener usuarios activos
+
     @GetMapping("/activos")
-    public ResponseEntity<List<Usuario>> listarActivos() {
-        return ResponseEntity.ok(usuarioService.listarActivos());
+    public ResponseEntity<List<UsuarioDTO>> listActive() {
+        Long empresaId = getAuthenticatedUserEmpresaId();
+        logger.info("📋 listActive usuarios para empresaId={}", empresaId);
+        List<UsuarioDTO> list = usuarioService.listActive(empresaId);
+        return ResponseEntity.ok(list);
     }
 
-    // ✅ Buscar usuario por ID
     @GetMapping("/{id}")
-    public ResponseEntity<Usuario> obtenerPorId(@PathVariable Long id) {
-        return ResponseEntity.ok(usuarioService.obtenerPorId(id));
+    public ResponseEntity<UsuarioDTO> getById(@PathVariable Long id) {
+        Long empresaId = getAuthenticatedUserEmpresaId();
+        logger.info("🔍 getById usuario id={} en empresaId={}", id, empresaId);
+        UsuarioDTO dto = usuarioService.findById(id);
+        if (!dto.getEmpresaId().equals(empresaId)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        return ResponseEntity.ok(dto);
     }
 
-    // ✅ Actualizar datos de usuario
+    @GetMapping("/search")
+    public ResponseEntity<UsuarioDTO> findByUsuario(@RequestParam String usuario) {
+        Long empresaId = getAuthenticatedUserEmpresaId();
+        logger.info("🔍 findByUsuario='{}' en empresaId={}", usuario, empresaId);
+        UsuarioDTO dto = usuarioService.findByUsuario(usuario, empresaId);
+        return ResponseEntity.ok(dto);
+    }
+
     @PutMapping("/{id}")
-    public ResponseEntity<Usuario> actualizarUsuario(@PathVariable Long id, @RequestBody Usuario usuarioActualizado) {
-        Usuario actualizado = usuarioService.actualizarUsuario(id, usuarioActualizado);
-        return ResponseEntity.ok(actualizado);
+    public ResponseEntity<UsuarioDTO> update(
+            @PathVariable Long id,
+            @Valid @RequestBody UsuarioCreateDTO body) {
+        Long empresaId = getAuthenticatedUserEmpresaId();
+        logger.info("🔄 update usuario id={} en empresaId={}", id, empresaId);
+        // ensure the DTO refers to same empresa
+        body.setEmpresaId(empresaId);
+        UsuarioDTO updated = usuarioService.update(id, body);
+        return ResponseEntity.ok(updated);
     }
 
-    // ✅ Desactivar usuario (soft delete)
     @PatchMapping("/{id}/desactivar")
-    public ResponseEntity<Usuario> desactivarUsuario(@PathVariable Long id) {
-        System.out.println("Llegó al método desactivarUsuario con id: " + id);
-        Usuario usuario = usuarioService.desactivarUsuario(id);
-        return ResponseEntity.ok(usuario);
+    public ResponseEntity<Void> deactivate(@PathVariable Long id) {
+        Long empresaId = getAuthenticatedUserEmpresaId();
+        logger.info("🛑 deactivate usuario id={} en empresaId={}", id, empresaId);
+        // verify belongs to empresa
+        UsuarioDTO dto = usuarioService.findById(id);
+        if (!dto.getEmpresaId().equals(empresaId)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        usuarioService.deactivate(id);
+        return ResponseEntity.noContent().build();
     }
 
-    // ✅ Activar usuario
     @PatchMapping("/{id}/activar")
-    public ResponseEntity<Usuario> activarUsuario(@PathVariable Long id) {
-        Usuario usuario = usuarioService.activarUsuario(id);
-        return ResponseEntity.ok(usuario);
+    public ResponseEntity<Void> activate(@PathVariable Long id) {
+        Long empresaId = getAuthenticatedUserEmpresaId();
+        logger.info("✅ activate usuario id={} en empresaId={}", id, empresaId);
+        UsuarioDTO dto = usuarioService.findById(id);
+        if (!dto.getEmpresaId().equals(empresaId)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        usuarioService.activate(id);
+        return ResponseEntity.noContent().build();
     }
 }

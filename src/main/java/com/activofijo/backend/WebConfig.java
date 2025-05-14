@@ -15,6 +15,7 @@ public class WebConfig {
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
                         .allowedOriginPatterns("http://localhost:3000") 
+                        //.allowedOriginPatterns("https://activo-fijo-front.vercel.app")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                         .allowedHeaders("*")                        
                         .allowCredentials(true);

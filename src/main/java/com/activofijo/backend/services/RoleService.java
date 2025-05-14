@@ -1,83 +1,112 @@
 package com.activofijo.backend.services;
 
-import com.activofijo.backend.DTO.PrivilegioDTO;
-import com.activofijo.backend.DTO.RoleDTO;
+import com.activofijo.backend.dto.RolDTO;
+import com.activofijo.backend.exception.BadRequestException;
+import com.activofijo.backend.exception.NotFoundException;
+import com.activofijo.backend.models.Empresa;
 import com.activofijo.backend.models.Privilegio;
 import com.activofijo.backend.models.Rol;
+import com.activofijo.backend.repository.EmpresaRepository;
 import com.activofijo.backend.repository.PrivilegioRepository;
 import com.activofijo.backend.repository.RolRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.Set; 
-
-
 
 @Service
 public class RoleService {
 
-    @Autowired
-    private RolRepository roleRepository;
+    private final RolRepository rolRepo;
+    private final EmpresaRepository empresaRepo;
+    private final PrivilegioRepository privilegioRepo;
 
-    @Autowired
-    private PrivilegioRepository privilegioRepository;
-
-    // Crear nuevo rol
-    public RoleDTO crearRole(RoleDTO roleDTO) {
-        Rol role = new Rol();
-        role.setNombre(roleDTO.getNombre());
-        role = roleRepository.save(role);
-
-        roleDTO.setId(role.getId());
-        return roleDTO;
+    public RoleService(RolRepository rolRepo,
+                       EmpresaRepository empresaRepo,
+                       PrivilegioRepository privilegioRepo) {
+        this.rolRepo = rolRepo;
+        this.empresaRepo = empresaRepo;
+        this.privilegioRepo = privilegioRepo;
     }
 
-    // Obtener todos los roles
-    public List<RoleDTO> obtenerTodos() {
-        return roleRepository.findAll().stream()
-                .map(role -> new RoleDTO(role.getId(), role.getNombre()))
-                .collect(Collectors.toList());
+    @Transactional(readOnly = true)
+    public List<RolDTO> listByEmpresa(Long empresaId) {
+        empresaRepo.findById(empresaId)
+                   .orElseThrow(() -> new NotFoundException("Empresa no encontrada: " + empresaId));
+
+        return rolRepo.findByEmpresaId(empresaId)
+                      .stream()
+                      .map(this::toDTO)
+                      .collect(Collectors.toList());
     }
 
-    // Obtener rol por ID
-    public RoleDTO obtenerPorId(Long id) {
-        Rol role = roleRepository.findById(id).orElseThrow();
-        return new RoleDTO(role.getId(), role.getNombre());
+    @Transactional
+    public RolDTO create(RolDTO dto, List<Long> privilegioIds) {
+        if (rolRepo.findByNombreAndEmpresaId(dto.getNombre(), dto.getEmpresaId()).isPresent()) {
+            throw new BadRequestException("Ya existe un rol con ese nombre en la empresa");
+        }
+
+        Empresa empresa = empresaRepo.findById(dto.getEmpresaId())
+                                     .orElseThrow(() -> new NotFoundException("Empresa no encontrada: " + dto.getEmpresaId()));
+
+        Rol rol = new Rol();
+        rol.setNombre(dto.getNombre());
+        rol.setEmpresa(empresa);
+
+        if (privilegioIds != null && !privilegioIds.isEmpty()) {
+            List<Privilegio> privilegios = privilegioRepo.findAllById(privilegioIds);
+            if (privilegios.size() != privilegioIds.size()) {
+                throw new BadRequestException("Alguno de los privilegios no existe");
+            }
+            // aquí usamos HashSet para JDK 8+:
+            Set<Privilegio> setPriv = new HashSet<>(privilegios);
+            rol.setPrivilegios(setPriv);
+        }
+
+        Rol saved = rolRepo.save(rol);
+        return toDTO(saved);
     }
 
-    // Actualizar rol
-    public RoleDTO actualizarRole(Long id, RoleDTO roleDTO) {
-        Rol role = roleRepository.findById(id).orElseThrow();
-        role.setNombre(roleDTO.getNombre());
-        role = roleRepository.save(role);
-        return new RoleDTO(role.getId(), role.getNombre());
+    @Transactional
+    public RolDTO update(Long rolId, RolDTO dto, List<Long> privilegioIds) {
+        Rol rol = rolRepo.findById(rolId)
+                         .orElseThrow(() -> new NotFoundException("Rol no encontrado: " + rolId));
+
+        if (!rol.getNombre().equals(dto.getNombre()) &&
+            rolRepo.findByNombreAndEmpresaId(dto.getNombre(), rol.getEmpresa().getId()).isPresent()) {
+            throw new BadRequestException("Ya existe un rol con ese nombre en la empresa");
+        }
+
+        rol.setNombre(dto.getNombre());
+
+        if (privilegioIds != null) {
+            List<Privilegio> privilegios = privilegioRepo.findAllById(privilegioIds);
+            if (privilegios.size() != privilegioIds.size()) {
+                throw new BadRequestException("Alguno de los privilegios no existe");
+            }
+            rol.setPrivilegios(new HashSet<>(privilegios));
+        }
+
+        Rol updated = rolRepo.save(rol);
+        return toDTO(updated);
     }
 
-    // Eliminar rol
-    public void eliminarRole(Long id) {
-        roleRepository.deleteById(id);
+    @Transactional
+    public void delete(Long rolId) {
+        if (!rolRepo.existsById(rolId)) {
+            throw new NotFoundException("Rol no encontrado: " + rolId);
+        }
+        rolRepo.deleteById(rolId);
     }
 
-    public void asignarPrivilegiosARol(Long rolId, List<Long> privilegioIds) {
-    Rol rol = roleRepository.findById(rolId)
-            .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
-
-    // Convertir la lista de privilegios en un set
-    Set<Privilegio> privilegios = new HashSet<>(privilegioRepository.findAllById(privilegioIds));
-    rol.getPrivilegios().addAll(privilegios);  // Agregar los privilegios al rol
-    roleRepository.save(rol);
-}
-
-    public List<PrivilegioDTO> obtenerPrivilegiosPorRol(Long rolId) {
-        Rol rol = roleRepository.findById(rolId)
-                .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
-
-        return rol.getPrivilegios().stream()
-                .map(p -> new PrivilegioDTO(p.getId(), p.getNombre()))
-                .collect(Collectors.toList());
+    private RolDTO toDTO(Rol rol) {
+        RolDTO dto = new RolDTO();
+        dto.setId(rol.getId());
+        dto.setNombre(rol.getNombre());
+        dto.setEmpresaId(rol.getEmpresa().getId());
+        return dto;
     }
-    
 }
