@@ -150,6 +150,7 @@ public class UsuarioService {
         dto.setNombreCompleto(u.getNombreCompleto());
         dto.setEmail(u.getEmail());
         dto.setRolId(u.getRol().getId());
+        dto.setRolNombre(u.getRol().getNombre());
         dto.setEmpresaId(u.getEmpresa().getId());
         dto.setFechaUltimoAcceso(u.getFechaUltimoAcceso());
         dto.setActivo(u.getActivo());
