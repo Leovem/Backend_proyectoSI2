@@ -38,10 +38,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             FilterChain filterChain)
             throws ServletException, IOException {
 
-        logger.info(">>> JwtAuthFilter: requestURI={}, method={}",
-                request.getRequestURI(), request.getMethod());
+        // logger.info(">>> JwtAuthFilter: requestURI={},
+        // method={}",request.getRequestURI(), request.getMethod());
         String authHeader = request.getHeader("Authorization");
-        logger.debug("[JwtAuthFilter] authHeader={}", authHeader);
+        // logger.debug("[JwtAuthFilter] authHeader={}", authHeader);
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
             logger.debug("[JwtAuthFilter] token extraído={}", token);
@@ -49,7 +49,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             try {
                 username = jwtUtil.getUsernameFromToken(token);
-                logger.debug("Username extraído del token: {}", username);
+                // logger.debug("Username extraído del token: {}", username);
             } catch (Exception e) {
                 logger.warn("❌ Error al extraer username del token: {}", e.getMessage());
             }
@@ -60,14 +60,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
                 Long empresaId = jwtUtil.getEmpresaIdFromToken(token);
                 logger.debug("[JwtAuthFilter] empresaId del token={}", empresaId);
+
+                String role = jwtUtil.getRoleFromToken(token);
+                logger.debug("[JwtAuthFilter] roles del token={}", role);
                 UsuarioDTO dto = usuarioService.findByUsuario(username, empresaId);
-                logger.debug("[JwtAuthFilter] UsuarioDTO encontrado={}", dto);
+                // logger.debug("[JwtAuthFilter] UsuarioDTO encontrado={}", dto);
 
                 GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + dto.getRolNombre());
 
                 UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
                         username,
-                        null,
+                        token,
                         List.of(authority));
                 SecurityContextHolder.getContext().setAuthentication(auth);
                 logger.info("✅ Autenticación JWT exitosa para usuario: {}", username);

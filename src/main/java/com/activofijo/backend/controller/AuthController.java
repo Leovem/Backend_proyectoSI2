@@ -31,9 +31,8 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
-        logger.info("[AuthController] login() recibido → usuario={}", request.getUsuario());
+        
         UsuarioDTO usuarioDTO = authService.login(request);
-        logger.info("[AuthController] login() service devolvió → {}", usuarioDTO);
         
 
         String token = jwtUtil.generateToken(

@@ -22,7 +22,9 @@ public class SecurityConfig {
           .csrf(csrf -> csrf.disable())
           .authorizeHttpRequests(auth -> auth
               .requestMatchers("/api/auth/**").permitAll()
-              .requestMatchers("/api/usuarios/**").hasRole("ADMINISTRADOR")
+              //.requestMatchers("/api/usuarios/**").hasRole("ADMINISTRADOR")
+              //.requestMatchers("/api/usuarios/**").permitAll()
+              .requestMatchers("/api/usuarios/**").authenticated()
               .requestMatchers("/api/privilegios/**", "/api/roles/**").permitAll()
               .anyRequest().authenticated()
           )

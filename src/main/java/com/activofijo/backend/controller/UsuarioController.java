@@ -29,14 +29,20 @@ public class UsuarioController {
     }
 
     private Long getAuthenticatedUserEmpresaId() {
+        logger.info("⚡️ getAuthenticatedEmpresaId() invocado");
         String token = (String) SecurityContextHolder.getContext()
-            .getAuthentication()
-            .getCredentials();
-        return jwtUtil.getEmpresaIdFromToken(token);
+                .getAuthentication()
+                .getCredentials();
+        logger.info("🔑 Token JWT obtenido: {}", token);
+        Long empresaId = jwtUtil.getEmpresaIdFromToken(token);
+        logger.info("🏢 Empresa ID extraído del token: {}", empresaId);
+        return empresaId;
+
     }
 
     @GetMapping
     public ResponseEntity<List<UsuarioDTO>> listAll() {
+        logger.info("⚡️ listAll() invocado");
         Long empresaId = getAuthenticatedUserEmpresaId();
         logger.info("📋 listAll usuarios para empresaId={}", empresaId);
         List<UsuarioDTO> list = usuarioService.listAll(empresaId);

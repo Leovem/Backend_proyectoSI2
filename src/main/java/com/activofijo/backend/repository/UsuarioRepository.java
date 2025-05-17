@@ -34,6 +34,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
      * Lista todos los usuarios de un rol dentro de una empresa.
      */
     List<Usuario> findByRolIdAndEmpresaId(Long rolId, Long empresaId);
+    // Lista todos los usuarios en la base de datos
     Optional<Usuario> findByUsuario(String usuario);
 
 }

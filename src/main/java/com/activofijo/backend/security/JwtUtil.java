@@ -21,7 +21,7 @@ public class JwtUtil {
     private final SecretKey key = Keys.hmacShaKeyFor(secret.getBytes());
 
     public String generateToken(String username, String role, Long empresaId) {
-        logger.debug("Generando token para usuario: {}, rol: {}, empresaId: {}", username, role, empresaId);
+        //logger.debug("Generando token para usuario: {}, rol: {}, empresaId: {}", username, role, empresaId);
         return Jwts.builder()
             .subject(username)
             .claim("authorities", List.of("ROLE_" + role))
@@ -34,33 +34,35 @@ public class JwtUtil {
 
     public String getUsernameFromToken(String token) {
         try {
-            logger.debug("🔑 JWT recibidoU: {}", token);
+            //logger.debug("🔑 JWT recibidoU: {}", token);
             Claims claims = extractAllClaims(token);
             String username = claims.getSubject();
-            logger.debug("Usuario extraído del token: {}", username);
+            //logger.debug("Usuario extraído del token: {}", username);
             return username;
         } catch (Exception e) {
-            logger.error("Error al extraer el username del token: {}", e.getMessage());
+            //logger.error("Error al extraer el username del token: {}", e.getMessage());
             throw new RuntimeException("Error al extraer el username del token", e);
         }
     }
 
     public String getRoleFromToken(String token) {
-        try {
-            logger.debug("🔑 JWT recibidoR: {}", token);
-            Claims claims = extractAllClaims(token);
-            return claims.get("role", String.class);
-        } catch (Exception e) {
-            logger.error("Error al extraer el rol del token: {}", e.getMessage());
-            throw new RuntimeException("Error al extraer el rol del token", e);
+    try {
+        Claims claims = extractAllClaims(token);
+        List<String> authorities = claims.get("authorities", List.class);
+        if (authorities != null && !authorities.isEmpty()) {
+            return authorities.get(0);  // Devuelve el primer rol
         }
+        return null;
+    } catch (Exception e) {
+        throw new RuntimeException("Error al extraer el rol del token", e);
     }
+}
+
 
     public Long getEmpresaIdFromToken(String token) {
     try {
-        logger.debug("🔑 JWT recibidoE: {}", token);
-        logger.debug("[getEmpresaIdFromToken] token recibido = `{}` (length={})",
-                 token, token != null ? token.length() : -1);
+        //logger.debug("🔑 JWT recibidoE: {}", token);
+        //logger.debug("[getEmpresaIdFromToken] token recibido = `{}` (length={})",token, token != null ? token.length() : -1);
         Claims claims = extractAllClaims(token);
         Object value = claims.get("empresaId");
 
@@ -84,21 +86,20 @@ public class JwtUtil {
 
     public boolean validateToken(String token, String username) {
         try {
-            logger.debug("🔑 JWT recibidoV: {}", token);
+            //logger.debug("🔑 JWT recibidoV: {}", token);
             Claims claims = extractAllClaims(token);
             boolean valid = claims.getSubject().equals(username) && !isTokenExpired(claims);
             logger.debug("Token validado: {}", valid);
             return valid;
         } catch (Exception e) {
-            logger.error("Error al validar el token: {}", e.getMessage());
+            //logger.error("Error al validar el token: {}", e.getMessage());
             return false;
         }
     }
 
     private Claims extractAllClaims(String token) {
-        logger.debug("🔑 JWT recibidoEx: {}", token);
-        logger.debug("[extractAllClaims] antes de parseClaimsJws, token = `{}` (length={})",
-                 token, token != null ? token.length() : -1);
+        //logger.debug("🔑 JWT recibidoEx: {}", token);
+        //logger.debug("[extractAllClaims] antes de parseClaimsJws, token = `{}` (length={})",token, token != null ? token.length() : -1);
         return Jwts.parser()
             .verifyWith(key)
             .build()

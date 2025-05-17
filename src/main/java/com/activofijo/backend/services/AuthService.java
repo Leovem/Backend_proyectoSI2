@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
 import java.time.OffsetDateTime;
+//import java.time.ZoneId;
 
 @Service
 public class AuthService {
@@ -41,38 +42,20 @@ public class AuthService {
     @Transactional
     public UsuarioDTO login(LoginRequest req) {
 
-        // 1) Buscar usuario por nombre (único en el sistema)
         Usuario usuario = usuarioRepo.findByUsuario(req.getUsuario())
                 .orElseThrow(() -> new UnauthorizedException("Usuario o contraseña inválidos"));
 
-        // 1) Imprime la contraseña en claro
-        logger.debug("[AuthService] contraseña recibida (raw)   = '{}'", req.getContrasena());
-        String rawPassword = "Admin123!";
-        String generatedHash = passwordEncoder.encode(rawPassword);
-        logger.info("🔐 Hash generado: {}", generatedHash);
-        boolean matche = passwordEncoder.matches(rawPassword, generatedHash);
-        logger.info("✅ ¿Coincide el hash generado? {}", matche);
-
-        // 2) Imprime el hash que hay en la base de datos
-        logger.debug("[AuthService] contraseña almacenada (hash) = '{}'", usuario.getContrasena());
-
         // 2) Verificar contraseña
         boolean match = passwordEncoder.matches(req.getContrasena(), usuario.getContrasena());
-        logger.debug("[AuthService] password match = {}", match);
-        logger.info("¿Password match? {}",
-                passwordEncoder.matches("Admin123!", "$2a$06$lvTdsLFI1x94vMu.mdgsOuFdrp6tRq.oosoAxuUB0fqmOSQV6fJ2O"));
 
         if (!match) {
             throw new UnauthorizedException("Usuario o contraseña inválidos");
         }
 
-        logger.info("[AuthService] contraseña válida para usuario='{}'", req.getUsuario());
-        logger.info("[AuthService] 2.usuario encontrado en BD: {}", usuario);
-        // 3) Actualizar último acceso
+
         usuario.setFechaUltimoAcceso(OffsetDateTime.now());
         usuarioRepo.save(usuario);
 
-        logger.info("[AuthService] 3.usuario encontrado en BD: {}", usuario);
         // 4) Convertir a DTO que incluye empresaId
         UsuarioDTO dto = toDTO(usuario);
         logger.info("[AuthService] login() SUCCESS, DTO = {}", dto);
