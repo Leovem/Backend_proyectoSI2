@@ -1,49 +1,48 @@
 package com.activofijo.backend.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "departamentos")
+@Table(name = "departamentos", uniqueConstraints = @UniqueConstraint(name = "unq_departamento_empresa", columnNames = {"nombre", "empresa_id"}))
 public class Departamento {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "nombre", nullable = false, unique = true)
+    @NotBlank
+    @Column(name = "nombre", nullable = false, length = 100)
     private String nombre;
 
-    @ManyToOne
-    @JoinColumn(name = "responsable_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "responsable_id", foreignKey = @ForeignKey(name = "fk_responsable"))
     private Usuario responsable;
 
-    @ManyToOne
-    @JoinColumn(name = "empresa_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "empresa_id", nullable = false, foreignKey = @ForeignKey(name = "fk_empresa", foreignKeyDefinition = "FOREIGN KEY (empresa_id) REFERENCES empresas(id) ON DELETE CASCADE"))
     private Empresa empresa;
 
     @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at")
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    // Constructor vacío
     public Departamento() {}
 
-    // Constructor con campos
     public Departamento(String nombre, Usuario responsable, Empresa empresa) {
         this.nombre = nombre;
         this.responsable = responsable;
         this.empresa = empresa;
     }
 
-    // Getters y Setters
     public Long getId() {
         return id;
     }

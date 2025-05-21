@@ -1,33 +1,43 @@
 package com.activofijo.backend.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 
 @Entity
-@Table(name = "cuentas_contables")
+@Table(
+    name = "cuentas_contables",
+    uniqueConstraints = @UniqueConstraint(name = "unq_cuenta_empresa", columnNames = {"codigo", "empresa_id"})
+)
 public class CuentaContable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 50)
+    @NotBlank
+    @Column(name = "codigo", nullable = false, length = 50)
     private String codigo;
 
-    @Column(nullable = false, length = 100)
+    @NotBlank
+    @Column(name = "nombre", nullable = false, length = 100)
     private String nombre;
 
-    @Column(nullable = false, length = 50)
-    private String tipo;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo", nullable = false, length = 50)
+    private TipoCuenta tipo;
 
-    @ManyToOne
-    @JoinColumn(name = "empresa_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(
+        name = "empresa_id",
+        nullable = false,
+        foreignKey = @ForeignKey(name = "fk_empresa", foreignKeyDefinition = "FOREIGN KEY (empresa_id) REFERENCES empresas(id) ON DELETE CASCADE")
+    )
     private Empresa empresa;
 
-    // Constructor vacío
+    // Constructores
     public CuentaContable() {}
 
-    // Constructor con campos
-    public CuentaContable(String codigo, String nombre, String tipo, Empresa empresa) {
+    public CuentaContable(String codigo, String nombre, TipoCuenta tipo, Empresa empresa) {
         this.codigo = codigo;
         this.nombre = nombre;
         this.tipo = tipo;
@@ -59,11 +69,11 @@ public class CuentaContable {
         this.nombre = nombre;
     }
 
-    public String getTipo() {
+    public TipoCuenta getTipo() {
         return tipo;
     }
 
-    public void setTipo(String tipo) {
+    public void setTipo(TipoCuenta tipo) {
         this.tipo = tipo;
     }
 

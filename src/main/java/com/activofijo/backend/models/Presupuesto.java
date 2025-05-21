@@ -1,6 +1,7 @@
 package com.activofijo.backend.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -9,55 +10,92 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "presupuestos")
+@Table(
+    name = "presupuestos",
+    uniqueConstraints = @UniqueConstraint(
+        name = "unq_presupuesto_empresa",
+        columnNames = { "nombre", "empresa_id" }
+    )
+)
 public class Presupuesto {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 100)
+    @NotBlank
+    @Column(name = "nombre", nullable = false, length = 100)
     private String nombre;
 
+    @NotNull
     @Column(name = "fecha_inicio", nullable = false)
     private LocalDate fechaInicio;
 
+    @NotNull
     @Column(name = "fecha_fin", nullable = false)
     private LocalDate fechaFin;
 
-    @Column(name = "monto_asignado", precision = 12, scale = 2)
+    @NotNull
+    @DecimalMin(value = "0.0", inclusive = true)
+    @Column(name = "monto_asignado", nullable = false)
     private BigDecimal montoAsignado;
 
-    @ManyToOne
-    @JoinColumn(name = "moneda")
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(
+        name = "moneda",
+        referencedColumnName = "codigo",
+        nullable = false,
+        foreignKey = @ForeignKey(name = "fk_moneda")
+    )
     private Moneda moneda;
 
-    @ManyToOne
-    @JoinColumn(name = "departamento_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+        name = "departamento_id",
+        foreignKey = @ForeignKey(name = "fk_departamento")
+    )
     private Departamento departamento;
 
-    @ManyToOne
-    @JoinColumn(name = "proyecto_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+        name = "proyecto_id",
+        foreignKey = @ForeignKey(name = "fk_proyecto")
+    )
     private Proyecto proyecto;
 
-    @ManyToOne
-    @JoinColumn(name = "empresa_id")
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(
+        name = "empresa_id",
+        nullable = false,
+        foreignKey = @ForeignKey(
+            name = "fk_empresa",
+            foreignKeyDefinition = "FOREIGN KEY (empresa_id) REFERENCES empresas(id) ON DELETE CASCADE"
+        )
+    )
     private Empresa empresa;
 
     @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at")
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    // Constructor vacío
     public Presupuesto() {}
 
-    // Constructor con campos
-    public Presupuesto(String nombre, LocalDate fechaInicio, LocalDate fechaFin, BigDecimal montoAsignado,
-                       Moneda moneda, Departamento departamento, Proyecto proyecto, Empresa empresa) {
+    public Presupuesto(
+        String nombre,
+        LocalDate fechaInicio,
+        LocalDate fechaFin,
+        BigDecimal montoAsignado,
+        Moneda moneda,
+        Departamento departamento,
+        Proyecto proyecto,
+        Empresa empresa
+    ) {
         this.nombre = nombre;
         this.fechaInicio = fechaInicio;
         this.fechaFin = fechaFin;
@@ -68,13 +106,10 @@ public class Presupuesto {
         this.empresa = empresa;
     }
 
-    // Getters y Setters
+    // Getters y setters
+
     public Long getId() {
         return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public String getNombre() {

@@ -1,77 +1,87 @@
 package com.activofijo.backend.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "factura")
+@Table(
+    name = "factura",
+    uniqueConstraints = @UniqueConstraint(name = "unq_factura_empresa", columnNames = {"numero", "empresa_id"})
+)
 public class Factura {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 50)
+    @NotBlank
+    @Column(nullable = false, length = 50)
     private String numero;
 
+    @NotNull
     @Column(nullable = false)
-    private LocalDate fecha;
+    private LocalDate fecha = LocalDate.now();
 
-    @ManyToOne
-    @JoinColumn(name = "proveedor_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "proveedor_id", foreignKey = @ForeignKey(name = "fk_proveedor"))
     private Proveedor proveedor;
 
-    @ManyToOne
-    @JoinColumn(name = "usuario_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id", foreignKey = @ForeignKey(name = "fk_usuario"))
     private Usuario usuario;
 
-    @ManyToOne
-    @JoinColumn(name = "orden_compra_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "orden_compra_id", foreignKey = @ForeignKey(name = "fk_orden_compra"))
     private OrdenCompra ordenCompra;
 
-    @ManyToOne
-    @JoinColumn(name = "presupuesto_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "presupuesto_id", foreignKey = @ForeignKey(name = "fk_presupuesto"))
     private Presupuesto presupuesto;
 
-    @ManyToOne
-    @JoinColumn(name = "cuenta_contable_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cuenta_contable_id", foreignKey = @ForeignKey(name = "fk_cuenta_contable"))
     private CuentaContable cuentaContable;
 
-    @ManyToOne
-    @JoinColumn(name = "empresa_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "empresa_id", nullable = false, foreignKey = @ForeignKey(name = "fk_empresa"))
     private Empresa empresa;
 
+    @NotNull
+    @DecimalMin(value = "0.0", inclusive = true)
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal total;
 
-    @ManyToOne
-    @JoinColumn(name = "moneda", referencedColumnName = "codigo", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "moneda", referencedColumnName = "codigo", foreignKey = @ForeignKey(name = "fk_moneda"))
     private Moneda moneda;
 
-    @Column(nullable = false, length = 20)
-    private String tipoPago;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_pago", nullable = false, length = 20)
+    private TipoPago tipoPago = TipoPago.Contado;
 
     @Column(columnDefinition = "TEXT")
     private String observaciones;
 
-    @Column(nullable = false, updatable = false)
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(nullable = false)
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    // Constructor vacío
-    public Factura() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
+    // Constructores
+    public Factura() {}
 
-    // Constructor con campos
     public Factura(String numero, LocalDate fecha, Proveedor proveedor, Usuario usuario,
                    OrdenCompra ordenCompra, Presupuesto presupuesto, CuentaContable cuentaContable,
-                   Empresa empresa, BigDecimal total, Moneda moneda, String tipoPago, String observaciones) {
+                   Empresa empresa, BigDecimal total, Moneda moneda, TipoPago tipoPago, String observaciones) {
         this.numero = numero;
         this.fecha = fecha;
         this.proveedor = proveedor;
@@ -84,11 +94,11 @@ public class Factura {
         this.moneda = moneda;
         this.tipoPago = tipoPago;
         this.observaciones = observaciones;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
     }
 
     // Getters y Setters
+
+
     public Long getId() {
         return id;
     }
@@ -177,11 +187,11 @@ public class Factura {
         this.moneda = moneda;
     }
 
-    public String getTipoPago() {
+    public TipoPago getTipoPago() {
         return tipoPago;
     }
 
-    public void setTipoPago(String tipoPago) {
+    public void setTipoPago(TipoPago tipoPago) {
         this.tipoPago = tipoPago;
     }
 
@@ -197,15 +207,7 @@ public class Factura {
         return createdAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
     }
 }

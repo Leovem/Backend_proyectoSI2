@@ -1,6 +1,7 @@
 package com.activofijo.backend.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 
 @Entity
@@ -11,47 +12,40 @@ public class DetalleOrdenCompra {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "orden_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "orden_id", nullable = false, foreignKey = @ForeignKey(name = "fk_detalle_orden"))
     private OrdenCompra ordenCompra;
 
+    @NotBlank
     @Column(nullable = false, columnDefinition = "TEXT")
     private String descripcion;
 
+    @NotNull @Min(1)
     @Column(nullable = false)
     private Integer cantidad;
 
+    @NotNull @DecimalMin("0.00")
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal precioEstimado;
 
-    @Column(nullable = false, precision = 12, scale = 2)
+    // subtotal es generado automáticamente, no se debe modificar manualmente
+    @Column(nullable = false, precision = 12, scale = 2, insertable = false, updatable = false)
     private BigDecimal subtotal;
 
-    // Constructor vacío
     public DetalleOrdenCompra() {}
 
-    // Constructor con campos
-    public DetalleOrdenCompra(OrdenCompra ordenCompra, String descripcion, Integer cantidad,
-                               BigDecimal precioEstimado) {
+    public DetalleOrdenCompra(OrdenCompra ordenCompra, String descripcion,
+                              Integer cantidad, BigDecimal precioEstimado) {
         this.ordenCompra = ordenCompra;
         this.descripcion = descripcion;
         this.cantidad = cantidad;
         this.precioEstimado = precioEstimado;
-        this.subtotal = calcularSubtotal(); // Se calcula el subtotal
-    }
-
-    // Método para calcular el subtotal (cantidad * precioEstimado)
-    public BigDecimal calcularSubtotal() {
-        return precioEstimado.multiply(BigDecimal.valueOf(cantidad));
     }
 
     // Getters y Setters
+
     public Long getId() {
         return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public OrdenCompra getOrdenCompra() {
@@ -76,7 +70,6 @@ public class DetalleOrdenCompra {
 
     public void setCantidad(Integer cantidad) {
         this.cantidad = cantidad;
-        this.subtotal = calcularSubtotal(); // Recalcula el subtotal
     }
 
     public BigDecimal getPrecioEstimado() {
@@ -85,14 +78,10 @@ public class DetalleOrdenCompra {
 
     public void setPrecioEstimado(BigDecimal precioEstimado) {
         this.precioEstimado = precioEstimado;
-        this.subtotal = calcularSubtotal(); // Recalcula el subtotal
     }
 
     public BigDecimal getSubtotal() {
         return subtotal;
     }
 
-    public void setSubtotal(BigDecimal subtotal) {
-        this.subtotal = subtotal;
-    }
 }

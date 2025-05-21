@@ -1,35 +1,35 @@
 package com.activofijo.backend.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 
 @Entity
-@Table(name = "metodo_depreciacion")
+@Table(name = "metodo_depreciacion", uniqueConstraints = @UniqueConstraint(name = "unq_nombre", columnNames = "nombre"))
 public class MetodoDepreciacion {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "nombre", nullable = false, unique = true)
+    @NotBlank
+    @Column(name = "nombre", nullable = false, length = 100, unique = true)
     private String nombre;
 
-    @Column(name = "formula", nullable = false)
+    @NotBlank
+    @Column(name = "formula", nullable = false, columnDefinition = "TEXT")
     private String formula;
 
     @Column(name = "requiere_vida_util", nullable = false)
-    private Boolean requiereVidaUtil;
+    private Boolean requiereVidaUtil = false;
 
-    // Constructor vacío (requerido por JPA)
     public MetodoDepreciacion() {}
 
-    // Constructor con campos
     public MetodoDepreciacion(String nombre, String formula, Boolean requiereVidaUtil) {
         this.nombre = nombre;
         this.formula = formula;
         this.requiereVidaUtil = requiereVidaUtil;
     }
 
-    // Getters y Setters
     public Long getId() {
         return id;
     }

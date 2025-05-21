@@ -1,6 +1,8 @@
 package com.activofijo.backend.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -8,55 +10,69 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "orden_compra")
+@Table(
+    name = "orden_compra",
+    uniqueConstraints = @UniqueConstraint(
+        name = "unq_orden_compra_empresa",
+        columnNames = {"numero", "empresa_id"}
+    )
+)
 public class OrdenCompra {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 50)
+    @NotBlank
+    @Column(name = "numero", nullable = false, length = 50)
     private String numero;
 
-    @Column(nullable = false)
-    private LocalDate fecha;
+    @NotNull
+    @Column(name = "fecha", nullable = false)
+    private LocalDate fecha = LocalDate.now();
 
-    @ManyToOne
-    @JoinColumn(name = "proveedor_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "proveedor_id", foreignKey = @ForeignKey(name = "fk_proveedor"))
     private Proveedor proveedor;
 
-    @ManyToOne
-    @JoinColumn(name = "usuario_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id", foreignKey = @ForeignKey(name = "fk_usuario"))
     private Usuario usuario;
 
-    @ManyToOne
-    @JoinColumn(name = "presupuesto_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "presupuesto_id", foreignKey = @ForeignKey(name = "fk_presupuesto"))
     private Presupuesto presupuesto;
 
-    @ManyToOne
-    @JoinColumn(name = "empresa_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(
+        name = "empresa_id",
+        nullable = false,
+        foreignKey = @ForeignKey(name = "fk_empresa")
+    )
     private Empresa empresa;
 
-    @Column(nullable = false, length = 20)
-    private String estado = "Pendiente"; // Valor por defecto
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado", nullable = false, length = 20)
+    private EstadoOrdenCompra estado = EstadoOrdenCompra.Pendiente;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "observaciones", columnDefinition = "TEXT")
     private String observaciones;
 
     @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at")
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
     // Constructor vacío
     public OrdenCompra() {}
 
-    // Constructor con campos
-    public OrdenCompra(String numero, LocalDate fecha, Proveedor proveedor, Usuario usuario,
-                       Presupuesto presupuesto, Empresa empresa, String estado, String observaciones) {
+    // Constructor con argumentos
+    public OrdenCompra(String numero, LocalDate fecha, Proveedor proveedor,
+                       Usuario usuario, Presupuesto presupuesto, Empresa empresa,
+                       EstadoOrdenCompra estado, String observaciones) {
         this.numero = numero;
         this.fecha = fecha;
         this.proveedor = proveedor;
@@ -67,7 +83,9 @@ public class OrdenCompra {
         this.observaciones = observaciones;
     }
 
-    // Getters y Setters
+    // Getters y Setters omitidos por brevedad (son correctos en tu versión)
+
+
     public Long getId() {
         return id;
     }
@@ -124,11 +142,11 @@ public class OrdenCompra {
         this.empresa = empresa;
     }
 
-    public String getEstado() {
+    public EstadoOrdenCompra getEstado() {
         return estado;
     }
 
-    public void setEstado(String estado) {
+    public void setEstado(EstadoOrdenCompra estado) {
         this.estado = estado;
     }
 

@@ -1,50 +1,50 @@
 package com.activofijo.backend.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "proveedores")
+@Table(name = "proveedores", uniqueConstraints = @UniqueConstraint(name = "unq_proveedor_empresa", columnNames = {"nombre", "empresa_id"}))
 public class Proveedor {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "nombre", nullable = false, unique = true)
+    @NotBlank
+    @Column(name = "nombre", nullable = false, length = 100)
     private String nombre;
 
-    @Column(name = "contacto")
+    @Column(name = "contacto", length = 100)
     private String contacto;
 
-    @Column(name = "email")
+    @Column(name = "email", length = 100)
     private String email;
 
-    @Column(name = "telefono")
+    @Column(name = "telefono", length = 20)
     private String telefono;
 
-    @Column(name = "direccion")
+    @Column(name = "direccion", columnDefinition = "TEXT")
     private String direccion;
 
-    @ManyToOne
-    @JoinColumn(name = "empresa_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "empresa_id", nullable = false, foreignKey = @ForeignKey(name = "fk_empresa", foreignKeyDefinition = "FOREIGN KEY (empresa_id) REFERENCES empresas(id) ON DELETE CASCADE"))
     private Empresa empresa;
 
     @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at")
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    // Constructor vacío
     public Proveedor() {}
 
-    // Constructor con campos
     public Proveedor(String nombre, String contacto, String email, String telefono, String direccion, Empresa empresa) {
         this.nombre = nombre;
         this.contacto = contacto;
@@ -54,7 +54,6 @@ public class Proveedor {
         this.empresa = empresa;
     }
 
-    // Getters y Setters
     public Long getId() {
         return id;
     }

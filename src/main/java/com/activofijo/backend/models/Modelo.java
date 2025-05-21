@@ -1,34 +1,31 @@
 package com.activofijo.backend.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 
 @Entity
-@Table(name = "modelos", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"nombre", "marca_id"})
-})
+@Table(name = "modelos", uniqueConstraints = @UniqueConstraint(name = "unq_modelo_marca", columnNames = {"nombre", "marca_id"}))
 public class Modelo {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "nombre", nullable = false)
+    @NotBlank
+    @Column(name = "nombre", nullable = false, length = 100)
     private String nombre;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "marca_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "marca_id", foreignKey = @ForeignKey(name = "fk_marca", foreignKeyDefinition = "FOREIGN KEY (marca_id) REFERENCES marcas(id) ON DELETE CASCADE"))
     private Marca marca;
 
-    // Constructor vacío
     public Modelo() {}
 
-    // Constructor con campos
     public Modelo(String nombre, Marca marca) {
         this.nombre = nombre;
         this.marca = marca;
     }
 
-    // Getters y Setters
     public Long getId() {
         return id;
     }

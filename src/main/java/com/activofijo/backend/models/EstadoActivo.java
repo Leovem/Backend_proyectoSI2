@@ -7,19 +7,15 @@ import jakarta.persistence.*;
 public class EstadoActivo {
 
     @Id
-    @Column(nullable = false, length = 50)
+    @Column(name = "estado", length = 50)
     private String estado;
 
-    // Constructor vacío
-    public EstadoActivo() {
-    }
+    public EstadoActivo() {}
 
-    // Constructor con el campo 'estado'
     public EstadoActivo(String estado) {
         this.estado = estado;
     }
 
-    // Getter y Setter
     public String getEstado() {
         return estado;
     }

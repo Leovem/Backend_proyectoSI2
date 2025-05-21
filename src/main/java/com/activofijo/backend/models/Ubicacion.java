@@ -1,33 +1,33 @@
 package com.activofijo.backend.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 
 @Entity
-@Table(name = "ubicacion")
+@Table(name = "ubicacion", uniqueConstraints = @UniqueConstraint(name = "unq_ubicacion_empresa", columnNames = {"nombre", "empresa_id"}))
 public class Ubicacion {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "nombre", nullable = false, unique = true)
+    @NotBlank
+    @Column(name = "nombre", nullable = false, length = 100)
     private String nombre;
 
-    @Column(name = "direccion")
+    @Column(name = "direccion", columnDefinition = "TEXT")
     private String direccion;
 
-    @ManyToOne
-    @JoinColumn(name = "responsable_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "responsable_id", foreignKey = @ForeignKey(name = "fk_responsable"))
     private Usuario responsable;
 
-    @ManyToOne
-    @JoinColumn(name = "empresa_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "empresa_id", nullable = false, foreignKey = @ForeignKey(name = "fk_empresa", foreignKeyDefinition = "FOREIGN KEY (empresa_id) REFERENCES empresas(id) ON DELETE CASCADE"))
     private Empresa empresa;
 
-    // Constructor vacío
     public Ubicacion() {}
 
-    // Constructor con campos
     public Ubicacion(String nombre, String direccion, Usuario responsable, Empresa empresa) {
         this.nombre = nombre;
         this.direccion = direccion;
@@ -35,7 +35,6 @@ public class Ubicacion {
         this.empresa = empresa;
     }
 
-    // Getters y Setters
     public Long getId() {
         return id;
     }
