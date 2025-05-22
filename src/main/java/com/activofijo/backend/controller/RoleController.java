@@ -13,8 +13,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-//import java.util.Map;
-//import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/roles")
@@ -102,4 +100,24 @@ public class RoleController {
         roleService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/{id}/privilegios")
+public ResponseEntity<RolDTO> asignarPrivilegios(
+        @PathVariable Long id,
+        @RequestBody List<Long> privilegioIds) {
+    
+    Long empresaId = getAuthenticatedUserEmpresaId();
+    logger.info("🔐 asignar privilegios a rol id={} (empresaId={})", id, empresaId);
+    
+    // Validar que el rol pertenece a la empresa
+    boolean exists = roleService.listByEmpresa(empresaId).stream()
+            .anyMatch(r -> r.getId().equals(id));
+    if (!exists) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+    }
+
+    RolDTO updated = roleService.actualizarPrivilegios(id, privilegioIds);
+    return ResponseEntity.ok(updated);
+}
+
 }

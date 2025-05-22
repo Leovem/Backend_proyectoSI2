@@ -1,5 +1,6 @@
 package com.activofijo.backend.services;
 
+import com.activofijo.backend.dto.PrivilegioDTO;
 import com.activofijo.backend.dto.RolDTO;
 import com.activofijo.backend.exception.BadRequestException;
 import com.activofijo.backend.exception.NotFoundException;
@@ -25,8 +26,8 @@ public class RoleService {
     private final PrivilegioRepository privilegioRepo;
 
     public RoleService(RolRepository rolRepo,
-                       EmpresaRepository empresaRepo,
-                       PrivilegioRepository privilegioRepo) {
+            EmpresaRepository empresaRepo,
+            PrivilegioRepository privilegioRepo) {
         this.rolRepo = rolRepo;
         this.empresaRepo = empresaRepo;
         this.privilegioRepo = privilegioRepo;
@@ -35,12 +36,12 @@ public class RoleService {
     @Transactional(readOnly = true)
     public List<RolDTO> listByEmpresa(Long empresaId) {
         empresaRepo.findById(empresaId)
-                   .orElseThrow(() -> new NotFoundException("Empresa no encontrada: " + empresaId));
+                .orElseThrow(() -> new NotFoundException("Empresa no encontrada: " + empresaId));
 
         return rolRepo.findByEmpresaId(empresaId)
-                      .stream()
-                      .map(this::toDTO)
-                      .collect(Collectors.toList());
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
     @Transactional
@@ -50,7 +51,7 @@ public class RoleService {
         }
 
         Empresa empresa = empresaRepo.findById(dto.getEmpresaId())
-                                     .orElseThrow(() -> new NotFoundException("Empresa no encontrada: " + dto.getEmpresaId()));
+                .orElseThrow(() -> new NotFoundException("Empresa no encontrada: " + dto.getEmpresaId()));
 
         Rol rol = new Rol();
         rol.setNombre(dto.getNombre());
@@ -73,10 +74,10 @@ public class RoleService {
     @Transactional
     public RolDTO update(Long rolId, RolDTO dto, List<Long> privilegioIds) {
         Rol rol = rolRepo.findById(rolId)
-                         .orElseThrow(() -> new NotFoundException("Rol no encontrado: " + rolId));
+                .orElseThrow(() -> new NotFoundException("Rol no encontrado: " + rolId));
 
         if (!rol.getNombre().equals(dto.getNombre()) &&
-            rolRepo.findByNombreAndEmpresaId(dto.getNombre(), rol.getEmpresa().getId()).isPresent()) {
+                rolRepo.findByNombreAndEmpresaId(dto.getNombre(), rol.getEmpresa().getId()).isPresent()) {
             throw new BadRequestException("Ya existe un rol con ese nombre en la empresa");
         }
 
@@ -102,11 +103,48 @@ public class RoleService {
         rolRepo.deleteById(rolId);
     }
 
+    @Transactional
+    public RolDTO actualizarPrivilegios(Long rolId, List<Long> privilegioIds) {
+        Rol rol = rolRepo.findById(rolId)
+                .orElseThrow(() -> new NotFoundException("Rol no encontrado"));
+
+        rol.getPrivilegios().clear(); // elimina todos los actuales
+
+        List<Privilegio> nuevos = privilegioRepo.findAllById(privilegioIds);
+        rol.getPrivilegios().addAll(nuevos); // agrega los nuevos
+
+        rolRepo.save(rol);
+        return toDTO(rol); // convierte a RolDTO
+    }
+
+    /*
+     * private RolDTO toDTO(Rol rol) {
+     * RolDTO dto = new RolDTO();
+     * dto.setId(rol.getId());
+     * dto.setNombre(rol.getNombre());
+     * dto.setEmpresaId(rol.getEmpresa().getId());
+     * return dto;
+     * }
+     */
     private RolDTO toDTO(Rol rol) {
         RolDTO dto = new RolDTO();
         dto.setId(rol.getId());
         dto.setNombre(rol.getNombre());
         dto.setEmpresaId(rol.getEmpresa().getId());
+
+        // IDs de los privilegios
+        List<Long> privilegioIds = rol.getPrivilegios().stream()
+                .map(Privilegio::getId)
+                .toList();
+        dto.setPrivilegioIds(privilegioIds);
+
+        // Lista detallada de privilegios
+        List<PrivilegioDTO> privilegios = rol.getPrivilegios().stream()
+                .map(p -> new PrivilegioDTO(p.getId(), p.getNombre()))
+                .toList();
+        dto.setPrivilegios(privilegios);
+
         return dto;
     }
+
 }
