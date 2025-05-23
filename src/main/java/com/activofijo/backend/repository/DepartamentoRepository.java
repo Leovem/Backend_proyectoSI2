@@ -9,5 +9,7 @@ import java.util.List;
 public interface DepartamentoRepository extends JpaRepository<Departamento, Long> {
     // List<Departamento> findAllByEmpresa_Id(Long empresaId);
     List<Departamento> findAllByEmpresa_Id(Long empresaId);
+    List<Departamento> findByEmpresaId(Long empresaId);
+    
 
 }

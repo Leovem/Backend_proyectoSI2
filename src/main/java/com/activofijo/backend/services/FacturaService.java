@@ -105,20 +105,32 @@ public class FacturaService {
     }
 
     private FacturaDTO toDTO(Factura factura) {
-        FacturaDTO dto = new FacturaDTO();
-        dto.setId(factura.getId());
-        dto.setNumero(factura.getNumero());
-        dto.setFecha(factura.getFecha());
-        dto.setTotal(factura.getTotal());
-        dto.setTipoPago(factura.getTipoPago().name());
-        dto.setMonedaCodigo(factura.getMoneda() != null ? factura.getMoneda().getCodigo() : null);
-        dto.setProveedorId(factura.getProveedor() != null ? factura.getProveedor().getId() : null);
-        dto.setUsuarioId(factura.getUsuario() != null ? factura.getUsuario().getId() : null);
-        dto.setOrdenCompraId(factura.getOrdenCompra() != null ? factura.getOrdenCompra().getId() : null);
-        dto.setPresupuestoId(factura.getPresupuesto() != null ? factura.getPresupuesto().getId() : null);
-        dto.setCuentaContableId(factura.getCuentaContable() != null ? factura.getCuentaContable().getId() : null);
-        dto.setEmpresaId(factura.getEmpresa().getId());
-        dto.setObservaciones(factura.getObservaciones());
-        return dto;
-    }
+    return new FacturaDTO(
+        factura.getId(),
+        factura.getNumero(),
+        factura.getFecha(),
+        factura.getTotal(),
+        factura.getMoneda() != null ? factura.getMoneda().getCodigo() : null,
+        factura.getTipoPago().name(),
+        factura.getObservaciones(),
+
+        factura.getProveedor() != null ? factura.getProveedor().getId() : null,
+        factura.getProveedor() != null ? factura.getProveedor().getNombre() : null,
+
+        factura.getUsuario() != null ? factura.getUsuario().getId() : null,
+        factura.getUsuario() != null ? factura.getUsuario().getNombreCompleto() : null,
+
+        factura.getOrdenCompra() != null ? factura.getOrdenCompra().getId() : null,
+        factura.getOrdenCompra() != null ? factura.getOrdenCompra().getNumero() : null,
+
+        factura.getPresupuesto() != null ? factura.getPresupuesto().getId() : null,
+        factura.getPresupuesto() != null ? factura.getPresupuesto().getNombre() : null,
+
+        factura.getCuentaContable() != null ? factura.getCuentaContable().getId() : null,
+        factura.getCuentaContable() != null ? factura.getCuentaContable().getNombre() : null,
+
+        factura.getEmpresa().getId()
+    );
+}
+
 }

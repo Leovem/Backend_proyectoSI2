@@ -72,37 +72,44 @@ public PresupuestoDTO crearPresupuesto(PresupuestoCreateDTO dto) {
 
     // ✅ Convertir y retornar como DTO
     return new PresupuestoDTO(
-        guardado.getId(),
-        guardado.getNombre(),
-        guardado.getFechaInicio(),
-        guardado.getFechaFin(),
-        guardado.getMontoAsignado(),
-        guardado.getMoneda().getCodigo(),
-        guardado.getDepartamento() != null ? guardado.getDepartamento().getId() : null,
-        guardado.getProyecto() != null ? guardado.getProyecto().getId() : null,
-        guardado.getEmpresa().getId()
-    );
+    guardado.getId(),
+    guardado.getNombre(),
+    guardado.getFechaInicio(),
+    guardado.getFechaFin(),
+    guardado.getMontoAsignado(),
+    guardado.getMoneda().getCodigo(),
+    guardado.getDepartamento() != null ? guardado.getDepartamento().getId() : null,
+    guardado.getDepartamento() != null ? guardado.getDepartamento().getNombre() : null,
+    guardado.getProyecto() != null ? guardado.getProyecto().getId() : null,
+    guardado.getProyecto() != null ? guardado.getProyecto().getNombre() : null,
+    guardado.getEmpresa().getId()
+);
+
+
 }
 
 
 
 
     @Transactional(readOnly = true)
-    public List<PresupuestoDTO> listarPorEmpresa(Long empresaId) {
-        return presupuestoRepository.findAllByEmpresa_Id(empresaId).stream()
-            .map(p -> new PresupuestoDTO(
-                p.getId(),
-                p.getNombre(),
-                p.getFechaInicio(),
-                p.getFechaFin(),
-                p.getMontoAsignado(),
-                p.getMoneda().getCodigo(),
-                p.getDepartamento() != null ? p.getDepartamento().getId() : null,
-                p.getProyecto() != null ? p.getProyecto().getId() : null,
-                p.getEmpresa().getId()
-            ))
-            .collect(Collectors.toList());
-    }
+public List<PresupuestoDTO> listarPorEmpresa(Long empresaId) {
+    return presupuestoRepository.findAllByEmpresa_Id(empresaId).stream()
+        .map(p -> new PresupuestoDTO(
+            p.getId(),
+            p.getNombre(),
+            p.getFechaInicio(),
+            p.getFechaFin(),
+            p.getMontoAsignado(),
+            p.getMoneda().getCodigo(),
+            p.getDepartamento() != null ? p.getDepartamento().getId() : null,
+            p.getDepartamento() != null ? p.getDepartamento().getNombre() : null,
+            p.getProyecto() != null ? p.getProyecto().getId() : null,
+            p.getProyecto() != null ? p.getProyecto().getNombre() : null,
+            p.getEmpresa().getId()
+        ))
+        .collect(Collectors.toList());
+}
+
 
     @Transactional
     public PresupuestoDTO actualizarPresupuesto(Long id, PresupuestoCreateDTO dto) {
@@ -144,16 +151,19 @@ public PresupuestoDTO crearPresupuesto(PresupuestoCreateDTO dto) {
         Presupuesto actualizado = presupuestoRepository.save(presupuesto);
 
         return new PresupuestoDTO(
-            actualizado.getId(),
-            actualizado.getNombre(),
-            actualizado.getFechaInicio(),
-            actualizado.getFechaFin(),
-            actualizado.getMontoAsignado(),
-            actualizado.getMoneda().getCodigo(),
-            actualizado.getDepartamento() != null ? actualizado.getDepartamento().getId() : null,
-            actualizado.getProyecto() != null ? actualizado.getProyecto().getId() : null,
-            actualizado.getEmpresa().getId()
-        );
+    actualizado.getId(),
+    actualizado.getNombre(),
+    actualizado.getFechaInicio(),
+    actualizado.getFechaFin(),
+    actualizado.getMontoAsignado(),
+    actualizado.getMoneda().getCodigo(),
+    actualizado.getDepartamento() != null ? actualizado.getDepartamento().getId() : null,
+    actualizado.getDepartamento() != null ? actualizado.getDepartamento().getNombre() : null,
+    actualizado.getProyecto() != null ? actualizado.getProyecto().getId() : null,
+    actualizado.getProyecto() != null ? actualizado.getProyecto().getNombre() : null,
+    actualizado.getEmpresa().getId()
+);
+
     }
 
     @Transactional
@@ -178,16 +188,19 @@ public PresupuestoDTO obtenerPorId(Long id, Long empresaId) {
     }
 
     return new PresupuestoDTO(
-        presupuesto.getId(),
-        presupuesto.getNombre(),
-        presupuesto.getFechaInicio(),
-        presupuesto.getFechaFin(),
-        presupuesto.getMontoAsignado(),
-        presupuesto.getMoneda().getCodigo(),
-        presupuesto.getDepartamento() != null ? presupuesto.getDepartamento().getId() : null,
-        presupuesto.getProyecto() != null ? presupuesto.getProyecto().getId() : null,
-        presupuesto.getEmpresa().getId()
-    );
+    presupuesto.getId(),
+    presupuesto.getNombre(),
+    presupuesto.getFechaInicio(),
+    presupuesto.getFechaFin(),
+    presupuesto.getMontoAsignado(),
+    presupuesto.getMoneda().getCodigo(),
+    presupuesto.getDepartamento() != null ? presupuesto.getDepartamento().getId() : null,
+    presupuesto.getDepartamento() != null ? presupuesto.getDepartamento().getNombre() : null,
+    presupuesto.getProyecto() != null ? presupuesto.getProyecto().getId() : null,
+    presupuesto.getProyecto() != null ? presupuesto.getProyecto().getNombre() : null,
+    presupuesto.getEmpresa().getId()
+);
+
 }
 
 }

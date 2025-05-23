@@ -11,15 +11,29 @@ public class PresupuestoDTO {
     private LocalDate fechaFin;
     private BigDecimal montoAsignado;
     private String moneda;
+
     private Long departamentoId;
+    private String departamentoNombre;
+
     private Long proyectoId;
+    private String proyectoNombre;
+
     private Long empresaId;
 
-    public PresupuestoDTO() {}
-
-    public PresupuestoDTO(Long id, String nombre, LocalDate fechaInicio, LocalDate fechaFin,
-                          BigDecimal montoAsignado, String moneda, Long departamentoId,
-                          Long proyectoId, Long empresaId) {
+    // ✅ Constructor completo
+    public PresupuestoDTO(
+        Long id,
+        String nombre,
+        LocalDate fechaInicio,
+        LocalDate fechaFin,
+        BigDecimal montoAsignado,
+        String moneda,
+        Long departamentoId,
+        String departamentoNombre,
+        Long proyectoId,
+        String proyectoNombre,
+        Long empresaId
+    ) {
         this.id = id;
         this.nombre = nombre;
         this.fechaInicio = fechaInicio;
@@ -27,81 +41,26 @@ public class PresupuestoDTO {
         this.montoAsignado = montoAsignado;
         this.moneda = moneda;
         this.departamentoId = departamentoId;
+        this.departamentoNombre = departamentoNombre;
         this.proyectoId = proyectoId;
+        this.proyectoNombre = proyectoNombre;
         this.empresaId = empresaId;
     }
 
-    // Getters y setters
-    public Long getId() {
-    return id;
-}
+    // ✅ Getters
 
-public void setId(Long id) {
-    this.id = id;
-}
+    public Long getId() { return id; }
+    public String getNombre() { return nombre; }
+    public LocalDate getFechaInicio() { return fechaInicio; }
+    public LocalDate getFechaFin() { return fechaFin; }
+    public BigDecimal getMontoAsignado() { return montoAsignado; }
+    public String getMoneda() { return moneda; }
 
-public String getNombre() {
-    return nombre;
-}
+    public Long getDepartamentoId() { return departamentoId; }
+    public String getDepartamentoNombre() { return departamentoNombre; }
 
-public void setNombre(String nombre) {
-    this.nombre = nombre;
-}
+    public Long getProyectoId() { return proyectoId; }
+    public String getProyectoNombre() { return proyectoNombre; }
 
-public LocalDate getFechaInicio() {
-    return fechaInicio;
-}
-
-public void setFechaInicio(LocalDate fechaInicio) {
-    this.fechaInicio = fechaInicio;
-}
-
-public LocalDate getFechaFin() {
-    return fechaFin;
-}
-
-public void setFechaFin(LocalDate fechaFin) {
-    this.fechaFin = fechaFin;
-}
-
-public BigDecimal getMontoAsignado() {
-    return montoAsignado;
-}
-
-public void setMontoAsignado(BigDecimal montoAsignado) {
-    this.montoAsignado = montoAsignado;
-}
-
-public String getMoneda() {
-    return moneda;
-}
-
-public void setMoneda(String moneda) {
-    this.moneda = moneda;
-}
-
-public Long getDepartamentoId() {
-    return departamentoId;
-}
-
-public void setDepartamentoId(Long departamentoId) {
-    this.departamentoId = departamentoId;
-}
-
-public Long getProyectoId() {
-    return proyectoId;
-}
-
-public void setProyectoId(Long proyectoId) {
-    this.proyectoId = proyectoId;
-}
-
-public Long getEmpresaId() {
-    return empresaId;
-}
-
-public void setEmpresaId(Long empresaId) {
-    this.empresaId = empresaId;
-}
-
+    public Long getEmpresaId() { return empresaId; }
 }

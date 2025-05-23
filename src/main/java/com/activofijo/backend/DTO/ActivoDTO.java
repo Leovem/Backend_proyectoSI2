@@ -24,6 +24,18 @@ public class ActivoDTO {
     private Long facturaId;
     private Long cuentaContableId;
 
+    private String tipoNombre;
+    private String metodoDepreciacionNombre;
+    private String tipoDepreciacionNombre;
+    private String grupoNombre;
+    private String clasificacionNombre;
+    private String marcaNombre;
+    private String modeloNombre;
+    private String contratoNombre;
+    private String ubicacionNombre;
+    private String facturaCodigo;
+    private String cuentaContableNombre;
+
     private Long empresaId;
     private BigDecimal valorInicial;
     private String monedaCodigo;
@@ -210,4 +222,93 @@ public class ActivoDTO {
     public void setNombreI18n(JsonObject nombreI18n) {
         this.nombreI18n = nombreI18n;
     }
+
+    public String getTipoNombre() {
+        return tipoNombre;
+    }
+
+    public void setTipoNombre(String tipoNombre) {
+        this.tipoNombre = tipoNombre;
+    }
+
+    public String getMetodoDepreciacionNombre() {
+        return metodoDepreciacionNombre;
+    }
+
+    public void setMetodoDepreciacionNombre(String metodoDepreciacionNombre) {
+        this.metodoDepreciacionNombre = metodoDepreciacionNombre;
+    }
+
+    public String getTipoDepreciacionNombre() {
+        return tipoDepreciacionNombre;
+    }
+
+    public void setTipoDepreciacionNombre(String tipoDepreciacionNombre) {
+        this.tipoDepreciacionNombre = tipoDepreciacionNombre;
+    }
+
+    public String getGrupoNombre() {
+        return grupoNombre;
+    }
+
+    public void setGrupoNombre(String grupoNombre) {
+        this.grupoNombre = grupoNombre;
+    }
+
+    public String getClasificacionNombre() {
+        return clasificacionNombre;
+    }
+
+    public void setClasificacionNombre(String clasificacionNombre) {
+        this.clasificacionNombre = clasificacionNombre;
+    }
+
+    public String getMarcaNombre() {
+        return marcaNombre;
+    }
+
+    public void setMarcaNombre(String marcaNombre) {
+        this.marcaNombre = marcaNombre;
+    }
+
+    public String getModeloNombre() {
+        return modeloNombre;
+    }
+
+    public void setModeloNombre(String modeloNombre) {
+        this.modeloNombre = modeloNombre;
+    }
+
+    public String getContratoNombre() {
+        return contratoNombre;
+    }
+
+    public void setContratoNombre(String contratoNombre) {
+        this.contratoNombre = contratoNombre;
+    }
+
+    public String getUbicacionNombre() {
+        return ubicacionNombre;
+    }
+
+    public void setUbicacionNombre(String ubicacionNombre) {
+        this.ubicacionNombre = ubicacionNombre;
+    }
+
+    public String getFacturaCodigo() {
+        return facturaCodigo;
+    }
+
+    public void setFacturaCodigo(String facturaCodigo) {
+        this.facturaCodigo = facturaCodigo;
+    }
+
+    public String getCuentaContableNombre() {
+        return cuentaContableNombre;
+    }
+
+    public void setCuentaContableNombre(String cuentaContableNombre) {
+        this.cuentaContableNombre = cuentaContableNombre;
+    }
+
 }

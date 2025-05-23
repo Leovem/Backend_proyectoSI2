@@ -137,31 +137,65 @@ public class ActivoService {
     }
 
     private ActivoDTO toDTO(Activo a) {
-        ActivoDTO dto = new ActivoDTO();
-        dto.setId(a.getId());
-        dto.setCodigo(a.getCodigo());
-        dto.setNombre(a.getNombre());
-        dto.setDescripcion(a.getDescripcion());
+    ActivoDTO dto = new ActivoDTO();
+    dto.setId(a.getId());
+    dto.setCodigo(a.getCodigo());
+    dto.setNombre(a.getNombre());
+    dto.setDescripcion(a.getDescripcion());
+    dto.setEmpresaId(a.getEmpresa().getId());
+    dto.setValorInicial(a.getValorInicial());
+    dto.setMonedaCodigo(a.getMoneda().getCodigo());
+    dto.setFechaAdquisicion(a.getFechaAdquisicion());
+    dto.setEstado(a.getEstado());
+    dto.setActivo(a.getActivo());
+    dto.setNombreI18n(a.getNombreI18n());
+
+    if (a.getTipo() != null) {
         dto.setTipoId(a.getTipo().getId());
-        dto.setEmpresaId(a.getEmpresa().getId());
-        dto.setValorInicial(a.getValorInicial());
-        dto.setMonedaCodigo(a.getMoneda().getCodigo());
-        dto.setFechaAdquisicion(a.getFechaAdquisicion());
-        dto.setEstado(a.getEstado());
-        dto.setActivo(a.getActivo());
-        dto.setNombreI18n(a.getNombreI18n());
-
-        if (a.getMetodoDepreciacion() != null) dto.setMetodoDepreciacionId(a.getMetodoDepreciacion().getId());
-        if (a.getTipoDepreciacion() != null) dto.setTipoDepreciacionId(a.getTipoDepreciacion().getId());
-        if (a.getGrupo() != null) dto.setGrupoId(a.getGrupo().getId());
-        if (a.getClasificacion() != null) dto.setClasificacionId(a.getClasificacion().getId());
-        if (a.getMarca() != null) dto.setMarcaId(a.getMarca().getId());
-        if (a.getModelo() != null) dto.setModeloId(a.getModelo().getId());
-        if (a.getContrato() != null) dto.setContratoId(a.getContrato().getId());
-        if (a.getUbicacion() != null) dto.setUbicacionId(a.getUbicacion().getId());
-        if (a.getFactura() != null) dto.setFacturaId(a.getFactura().getId());
-        if (a.getCuentaContable() != null) dto.setCuentaContableId(a.getCuentaContable().getId());
-
-        return dto;
+        dto.setTipoNombre(a.getTipo().getNombre());
     }
+    if (a.getMetodoDepreciacion() != null) {
+        dto.setMetodoDepreciacionId(a.getMetodoDepreciacion().getId());
+        dto.setMetodoDepreciacionNombre(a.getMetodoDepreciacion().getNombre());
+    }
+    if (a.getTipoDepreciacion() != null) {
+        dto.setTipoDepreciacionId(a.getTipoDepreciacion().getId());
+        dto.setTipoDepreciacionNombre(a.getTipoDepreciacion().getNombre());
+    }
+    if (a.getGrupo() != null) {
+        dto.setGrupoId(a.getGrupo().getId());
+        dto.setGrupoNombre(a.getGrupo().getNombre());
+    }
+    if (a.getClasificacion() != null) {
+        dto.setClasificacionId(a.getClasificacion().getId());
+        dto.setClasificacionNombre(a.getClasificacion().getNombre());
+    }
+    if (a.getMarca() != null) {
+        dto.setMarcaId(a.getMarca().getId());
+        dto.setMarcaNombre(a.getMarca().getNombre());
+    }
+    if (a.getModelo() != null) {
+        dto.setModeloId(a.getModelo().getId());
+        dto.setModeloNombre(a.getModelo().getNombre());
+    }
+    if (a.getContrato() != null) {
+        dto.setContratoId(a.getContrato().getId());
+        dto.setContratoNombre(a.getContrato().getNombre());
+    }
+    if (a.getUbicacion() != null) {
+        dto.setUbicacionId(a.getUbicacion().getId());
+        dto.setUbicacionNombre(a.getUbicacion().getNombre());
+    }
+    if (a.getFactura() != null) {
+        dto.setFacturaId(a.getFactura().getId());
+        dto.setFacturaCodigo(a.getFactura().getNumero());
+    }
+    if (a.getCuentaContable() != null) {
+        dto.setCuentaContableId(a.getCuentaContable().getId());
+        dto.setCuentaContableNombre(a.getCuentaContable().getNombre());
+    }
+
+    return dto;
+}
+
 }
