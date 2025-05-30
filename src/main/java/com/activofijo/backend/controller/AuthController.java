@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -27,6 +28,12 @@ public class AuthController {
                           JwtUtil jwtUtil) {
         this.authService = authService;
         this.jwtUtil = jwtUtil;
+    }
+
+     private Long getAuthenticatedEmpresaId() {
+        String token = (String) SecurityContextHolder.getContext()
+                .getAuthentication().getCredentials();
+        return jwtUtil.getEmpresaIdFromToken(token);
     }
 
     @PostMapping("/login")
@@ -56,12 +63,15 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody UsuarioCreateDTO dto) {
+        Long empresaId = getAuthenticatedEmpresaId();  // 👈 extrae el empresaId del token
+        dto.setEmpresaId(empresaId);                   // 👈 así ya no lo necesitas en el JSON
+
         logger.info("📝 Intentando registrar usuario: {} (empresaId={})",
-                    dto.getUsuario(), dto.getEmpresaId());
+                    dto.getUsuario(), empresaId);
+
         try {
             UsuarioDTO created = authService.register(dto);
-            logger.info("✅ Usuario registrado: {} (id={})",
-                        created.getUsuario(), created.getId());
+            logger.info("✅ Usuario registrado: {} (id={})", created.getUsuario(), created.getId());
             return ResponseEntity.status(HttpStatus.CREATED).body(created);
 
         } catch (BadRequestException e) {
