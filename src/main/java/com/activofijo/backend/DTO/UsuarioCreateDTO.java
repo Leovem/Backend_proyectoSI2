@@ -22,7 +22,6 @@ public class UsuarioCreateDTO {
     @NotNull(message = "Debe especificar el id del rol")
     private Long rolId;
 
-    @NotNull(message = "Debe especificar el id de la empresa")
     private Long empresaId;
 
     // getters y setters
