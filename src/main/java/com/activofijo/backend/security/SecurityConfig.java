@@ -28,7 +28,8 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults()) // ✅ Lambda DSL para CORS
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/auth/login").permitAll()
+                .requestMatchers("/api/auth/register").authenticated()
                 .requestMatchers("/api/privilegios/**").permitAll()
                 .requestMatchers("/api/usuarios/**").authenticated()
                 .requestMatchers("/api/roles/**").authenticated()
