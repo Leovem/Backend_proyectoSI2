@@ -81,6 +81,13 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+  <groupId>com.stripe</groupId>
+  <artifactId>stripe-java</artifactId>
+  <version>24.1.0</version> <!-- o una versión estable reciente -->
+</dependency>
+
+
 <!-- API Jakarta JSON Processing -->
 <dependency>
   <groupId>jakarta.json</groupId>
