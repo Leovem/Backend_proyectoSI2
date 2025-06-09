@@ -39,7 +39,7 @@ public class StripeController {
     @Value("${stripe.secret.key}")
     private String stripeSecretKey;
 
-    @Value("${stripe.secret.key}")
+    @Value("${stripe.webhook.key}")
     private String stripeWebhookKey;
 
 
