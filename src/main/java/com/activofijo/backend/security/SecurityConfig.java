@@ -53,6 +53,11 @@ public class SecurityConfig {
                 .requestMatchers("/api/tipo-depreciacion/**").permitAll()
                 .requestMatchers("/api/modelos/**").permitAll()
                 .requestMatchers("/api/monedas/**").permitAll()
+                .requestMatchers("/api/planes/**").permitAll()
+                .requestMatchers("/api/pagos/**").permitAll()
+                .requestMatchers("/api/subscriptions/**").permitAll()
+                .requestMatchers("/api/auditoria/**").authenticated()
+
                 .anyRequest().authenticated()
             )
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
