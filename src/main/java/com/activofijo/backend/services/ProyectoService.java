@@ -2,10 +2,13 @@ package com.activofijo.backend.services;
 
 import com.activofijo.backend.dto.ProyectoCreateDTO;
 import com.activofijo.backend.dto.ProyectoDTO;
+import com.activofijo.backend.exception.BadRequestException;
 import com.activofijo.backend.models.Empresa;
 import com.activofijo.backend.models.Proyecto;
+import com.activofijo.backend.models.Usuario;
 import com.activofijo.backend.repository.EmpresaRepository;
 import com.activofijo.backend.repository.ProyectoRepository;
+import com.activofijo.backend.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,19 +20,32 @@ public class ProyectoService {
 
     private final ProyectoRepository proyectoRepository;
     private final EmpresaRepository empresaRepository;
+    private final UsuarioRepository usuarioRepo;
+    private final AuditoriaService auditoriaService;
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ProyectoService.class);
 
-    public ProyectoService(ProyectoRepository proyectoRepository, EmpresaRepository empresaRepository) {
+    public ProyectoService(ProyectoRepository proyectoRepository, EmpresaRepository empresaRepository,
+                           UsuarioRepository usuarioRepo,
+                           AuditoriaService auditoriaService) {
         this.proyectoRepository = proyectoRepository;
         this.empresaRepository = empresaRepository;
+        this.usuarioRepo = usuarioRepo;
+        this.auditoriaService = auditoriaService;
     }
 
     @Transactional
-    public ProyectoDTO crearProyecto(ProyectoCreateDTO dto) {
+    public ProyectoDTO crearProyecto(ProyectoCreateDTO dto, String ipCliente, String username) {
         if (proyectoRepository.existsByNombreAndEmpresa_Id(dto.getNombre(), dto.getEmpresaId())) {
             throw new IllegalArgumentException("Ya existe un proyecto con ese nombre para esta empresa.");
         }
         Empresa empresa = empresaRepository.findById(dto.getEmpresaId())
                 .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada con id: " + dto.getEmpresaId()));
+
+        Usuario usuarioCreador = usuarioRepo.findByUsuarioAndEmpresaId(username, dto.getEmpresaId())
+                .orElseThrow(() -> new BadRequestException("Usuario creador no encontrado"));
+
+        Long idCreador = usuarioCreador.getId();
+
 
         Proyecto proyecto = new Proyecto();
         proyecto.setNombre(dto.getNombre());
@@ -38,6 +54,21 @@ public class ProyectoService {
 
         Proyecto saved = proyectoRepository.save(proyecto);
 
+        try {
+            auditoriaService.registrarOperacion(
+                    "proyectos", // 👈 tabla correcta
+                    "INSERT",
+                    null, // antes del insert no existía
+                    proyecto, // después
+                    saved.getId(), // id del nuevo rol creado
+                    idCreador,
+                    dto.getEmpresaId(),
+                    "Creación de rol",
+                    "Se creó el proyecto con nombre=" + proyecto.getNombre() + " por el usuario " + username,
+                    ipCliente);
+        } catch (Exception e) {
+            logger.warn("❌ Error registrando auditoría de creación de rol: {}", e.getMessage());
+        }
         // Aquí conviertes la entidad Proyecto a DTO antes de devolver
         return new ProyectoDTO(
                 saved.getId(),

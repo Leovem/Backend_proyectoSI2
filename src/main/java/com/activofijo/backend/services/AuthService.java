@@ -28,34 +28,54 @@ public class AuthService {
     private final RolRepository rolRepo;
     private final EmpresaRepository empresaRepo;
     private final PasswordEncoder passwordEncoder;
+    private final AuditoriaService auditoriaService;
 
     public AuthService(UsuarioRepository usuarioRepo,
             RolRepository rolRepo,
             EmpresaRepository empresaRepo,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            AuditoriaService auditoriaService) {
         this.usuarioRepo = usuarioRepo;
         this.rolRepo = rolRepo;
         this.empresaRepo = empresaRepo;
         this.passwordEncoder = passwordEncoder;
+        this.auditoriaService = auditoriaService;
     }
 
     @Transactional
-    public UsuarioDTO login(LoginRequest req) {
+    public UsuarioDTO login(LoginRequest req, String ipCliente) {
+        logger.info("[AuthService] Login recibido para usuario: {}", req.getUsuario());
+        Usuario usuario = usuarioRepo.findByUsuario(req.getUsuario()).orElse(null);
+        
 
-        Usuario usuario = usuarioRepo.findByUsuario(req.getUsuario())
-                .orElseThrow(() -> new UnauthorizedException("Usuario o contraseña inválidos"));
-
+        if (usuario == null) {
+            try {
+                auditoriaService.registrarLoginFallido(req.getUsuario(), ipCliente, "Usuario no encontrado");
+            } catch (Exception e) {
+                logger.warn("Error auditando login fallido (usuario no encontrado): {}", e.getMessage());
+            }
+            throw new UnauthorizedException("Usuario o contraseña inválidos");
+        }
         // 2) Verificar contraseña
         boolean match = passwordEncoder.matches(req.getContrasena(), usuario.getContrasena());
 
         if (!match) {
+            try {
+                auditoriaService.registrarLoginFallido(req.getUsuario(), ipCliente, "Contraseña incorrecta");
+            } catch (Exception e) {
+                logger.warn("Error auditando login fallido (contraseña incorrecta): {}", e.getMessage());
+            }
             throw new UnauthorizedException("Usuario o contraseña inválidos");
         }
-
 
         usuario.setFechaUltimoAcceso(OffsetDateTime.now());
         usuarioRepo.save(usuario);
 
+        try {
+            auditoriaService.registrarLoginExitoso(usuario.getId(), usuario.getEmpresa().getId(), ipCliente);
+        } catch (Exception e) {
+            logger.error("Error registrando auditoría de login exitoso", e);
+        }
         // 4) Convertir a DTO que incluye empresaId
         UsuarioDTO dto = toDTO(usuario);
         logger.info("[AuthService] login() SUCCESS, DTO = {}", dto);
@@ -63,13 +83,18 @@ public class AuthService {
     }
 
     @Transactional
-    public UsuarioDTO register(UsuarioCreateDTO dto) {
+    public UsuarioDTO register(UsuarioCreateDTO dto, String ipCliente, String username) {
         if (usuarioRepo.findByUsuarioAndEmpresaId(dto.getUsuario(), dto.getEmpresaId()).isPresent()) {
             throw new BadRequestException("Ya existe un usuario con ese nombre en la empresa");
         }
         if (usuarioRepo.findByEmailAndEmpresaId(dto.getEmail(), dto.getEmpresaId()).isPresent()) {
             throw new BadRequestException("Ya existe un usuario con ese email en la empresa");
         }
+
+        Usuario usuarioCreador = usuarioRepo.findByUsuarioAndEmpresaId(username, dto.getEmpresaId())
+                .orElseThrow(() -> new BadRequestException("Usuario creador no encontrado"));
+
+        Long idCreador = usuarioCreador.getId();
 
         Rol rol = rolRepo.findById(dto.getRolId())
                 .orElseThrow(() -> new BadRequestException("Rol no encontrado"));
@@ -86,6 +111,13 @@ public class AuthService {
         u.setActivo(true);
 
         u = usuarioRepo.save(u);
+
+        try {
+            auditoriaService.registrarCreacionUsuario(u, idCreador, ipCliente);
+        } catch (Exception e) {
+            logger.warn("No se pudo registrar auditoría de creación de usuario: {}", e.getMessage());
+        }
+
         return toDTO(u);
     }
 

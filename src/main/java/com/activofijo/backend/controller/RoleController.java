@@ -3,6 +3,8 @@ package com.activofijo.backend.controller;
 import com.activofijo.backend.dto.RolDTO;
 import com.activofijo.backend.security.JwtUtil;
 import com.activofijo.backend.services.RoleService;
+
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.slf4j.Logger;
@@ -35,6 +37,20 @@ public class RoleController {
         return jwtUtil.getEmpresaIdFromToken(token);
     }
 
+    private String getAuthenticatedUsername() {
+        String token = (String) SecurityContextHolder.getContext()
+                .getAuthentication().getCredentials();
+        return jwtUtil.getUsernameFromToken(token);
+    }
+
+    private String extraerIpCliente(HttpServletRequest request) {
+        String xfHeader = request.getHeader("X-Forwarded-For");
+        if (xfHeader == null) {
+            return request.getRemoteAddr();
+        }
+        return xfHeader.split(",")[0]; // En caso de múltiples proxies
+    }
+
     @GetMapping
     public ResponseEntity<List<RolDTO>> list() {
         Long empresaId = getAuthenticatedUserEmpresaId();
@@ -63,13 +79,17 @@ public class RoleController {
 
     @PostMapping
     public ResponseEntity<RolDTO> create(
-            @Valid @RequestBody RoleRequest body) {
+            @Valid @RequestBody RoleRequest body,
+            HttpServletRequest httpRequest) {
         Long empresaId = getAuthenticatedUserEmpresaId();
+        String ipCliente = extraerIpCliente(httpRequest);
+        String username = getAuthenticatedUsername();
+
         logger.info("➕ create role '{}' en empresaId={}", body.nombre, empresaId);
         RolDTO dto = new RolDTO();
         dto.setNombre(body.nombre);
         dto.setEmpresaId(empresaId);
-        RolDTO created = roleService.create(dto, body.privilegioIds);
+        RolDTO created = roleService.create(dto, body.privilegioIds, ipCliente, username);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 

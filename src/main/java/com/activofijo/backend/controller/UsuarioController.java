@@ -4,6 +4,8 @@ import com.activofijo.backend.dto.UsuarioCreateDTO;
 import com.activofijo.backend.dto.UsuarioDTO;
 import com.activofijo.backend.security.JwtUtil;
 import com.activofijo.backend.services.UsuarioService;
+
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +40,20 @@ public class UsuarioController {
         logger.info("🏢 Empresa ID extraído del token: {}", empresaId);
         return empresaId;
 
+    }
+
+    private String getAuthenticatedUsername() {
+        String token = (String) SecurityContextHolder.getContext()
+                .getAuthentication().getCredentials();
+        return jwtUtil.getUsernameFromToken(token);
+    }
+
+    private String extraerIpCliente(HttpServletRequest request) {
+        String xfHeader = request.getHeader("X-Forwarded-For");
+        if (xfHeader == null) {
+            return request.getRemoteAddr();
+        }
+        return xfHeader.split(",")[0]; // En caso de múltiples proxies
     }
 
     @GetMapping
@@ -79,12 +95,16 @@ public class UsuarioController {
     @PutMapping("/{id}")
     public ResponseEntity<UsuarioDTO> update(
             @PathVariable Long id,
-            @Valid @RequestBody UsuarioCreateDTO body) {
+            @Valid @RequestBody UsuarioCreateDTO body,
+            HttpServletRequest httpRequest) {
         Long empresaId = getAuthenticatedUserEmpresaId();
+        String ipCliente = extraerIpCliente(httpRequest);
+        String username = getAuthenticatedUsername();
+
         logger.info("🔄 update usuario id={} en empresaId={}", id, empresaId);
-        // ensure the DTO refers to same empresa
+
         body.setEmpresaId(empresaId);
-        UsuarioDTO updated = usuarioService.update(id, body);
+        UsuarioDTO updated = usuarioService.update(id, body, ipCliente, username);
         return ResponseEntity.ok(updated);
     }
 

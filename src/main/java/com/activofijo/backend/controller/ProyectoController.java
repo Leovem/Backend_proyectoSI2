@@ -4,6 +4,8 @@ import com.activofijo.backend.dto.ProyectoCreateDTO;
 import com.activofijo.backend.dto.ProyectoDTO;
 import com.activofijo.backend.security.JwtUtil;
 import com.activofijo.backend.services.ProyectoService;
+
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.slf4j.Logger;
@@ -34,6 +36,20 @@ public class ProyectoController {
         return jwtUtil.getEmpresaIdFromToken(token);
     }
 
+    private String getAuthenticatedUsername() {
+        String token = (String) SecurityContextHolder.getContext()
+                .getAuthentication().getCredentials();
+        return jwtUtil.getUsernameFromToken(token);
+    }
+
+    private String extraerIpCliente(HttpServletRequest request) {
+        String xfHeader = request.getHeader("X-Forwarded-For");
+        if (xfHeader == null) {
+            return request.getRemoteAddr();
+        }
+        return xfHeader.split(",")[0]; // En caso de múltiples proxies
+    }
+
     public static class ProyectoRequest {
         @NotBlank(message = "El nombre no puede estar vacío")
         public String nombre;
@@ -41,8 +57,11 @@ public class ProyectoController {
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@Valid @RequestBody ProyectoRequest body) {
+    public ResponseEntity<?> create(@Valid @RequestBody ProyectoRequest body, HttpServletRequest request) {
         Long empresaId = getAuthenticatedUserEmpresaId();
+        String ipCliente = extraerIpCliente(request);
+        String username = getAuthenticatedUsername();
+
         logger.info("➕ Crear proyecto '{}' para empresaId={}", body.nombre, empresaId);
 
         ProyectoCreateDTO dto = new ProyectoCreateDTO();
@@ -51,7 +70,7 @@ public class ProyectoController {
         dto.setEmpresaId(empresaId);
 
         try {
-            ProyectoDTO proyectoCreado = proyectoService.crearProyecto(dto);
+            ProyectoDTO proyectoCreado = proyectoService.crearProyecto(dto, ipCliente, username);
             return ResponseEntity.status(HttpStatus.CREATED).body(proyectoCreado);
         } catch (IllegalArgumentException e) {
             logger.warn("Error al crear proyecto: {}", e.getMessage());

@@ -4,6 +4,8 @@ import com.activofijo.backend.dto.PresupuestoCreateDTO;
 import com.activofijo.backend.dto.PresupuestoDTO;
 import com.activofijo.backend.security.JwtUtil;
 import com.activofijo.backend.services.PresupuestoService;
+
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,15 +34,32 @@ public class PresupuestoController {
         return jwtUtil.getEmpresaIdFromToken(token);
     }
 
+    private String getAuthenticatedUsername() {
+        String token = (String) SecurityContextHolder.getContext()
+                .getAuthentication().getCredentials();
+        return jwtUtil.getUsernameFromToken(token);
+    }
+
+    private String extraerIpCliente(HttpServletRequest request) {
+        String xfHeader = request.getHeader("X-Forwarded-For");
+        if (xfHeader == null) {
+            return request.getRemoteAddr();
+        }
+        return xfHeader.split(",")[0]; // En caso de múltiples proxies
+    }
+
     @PostMapping
-    public ResponseEntity<?> create(@Valid @RequestBody PresupuestoCreateDTO body) {
+    public ResponseEntity<?> create(@Valid @RequestBody PresupuestoCreateDTO body, HttpServletRequest request) {
+        logger.info("📦 Datos recibidos desde frontend: {}", body);
         Long empresaId = getAuthenticatedUserEmpresaId();
+        String ipCliente = extraerIpCliente(request);
+        String username = getAuthenticatedUsername();
         body.setEmpresaId(empresaId);
 
         logger.info("➕ Crear presupuesto '{}' para empresaId={}", body.getNombre(), empresaId);
 
         try {
-            PresupuestoDTO creado = presupuestoService.crearPresupuesto(body);
+            PresupuestoDTO creado = presupuestoService.crearPresupuesto(body, ipCliente, username);
             return ResponseEntity.status(HttpStatus.CREATED).body(creado);
         } catch (IllegalArgumentException e) {
             logger.warn("❌ Error al crear presupuesto: {}", e.getMessage());

@@ -6,11 +6,13 @@ import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Service
 public class AuditoriaService {
 
     private final JdbcTemplate jdbcTemplate;
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(AuditoriaService.class);
 
     public AuditoriaService(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
@@ -116,25 +118,42 @@ public class AuditoriaService {
                                Object antes, Object despues,
                                Long registroId, Long usuarioId, Long empresaId,
                                String accion, String descripcion, String ipCliente) {
+
+
     String sql = """
-        SELECT registrar_auditoria(
-            ?, ?, ?, ?::jsonb, ?::jsonb,
-            ?, ?, ?, ?, ?, ?
-        )
-    """;
-    jdbcTemplate.queryForObject(sql, Void.class,
-        tabla,
-        registroId,
-        operacion,
-        toJson(antes),
-        toJson(despues),
-        usuarioId,
-        empresaId,
-        accion,
-        descripcion,
-        ipCliente,
-        Timestamp.from(Instant.now())
-    );
+                    SELECT registrar_auditoria(
+                        CAST(? AS TEXT),
+                        CAST(? AS INT),
+                        CAST(? AS TEXT),
+                        CAST(? AS JSONB),
+                        CAST(? AS JSONB),
+                        CAST(? AS INT),
+                        CAST(? AS INT),         
+                        CAST(? AS TEXT),
+                        CAST(? AS TEXT),
+                        CAST(? AS INET),
+                        CAST(? AS TIMESTAMP)
+                    )
+                """;
+
+    try {
+        jdbcTemplate.update(sql,
+            tabla,
+            registroId,
+            operacion,
+            toJson(antes),
+            toJson(despues),
+            usuarioId,
+            empresaId,
+            accion,
+            descripcion,
+            ipCliente, // ahora es TEXT, no necesita cast
+            Timestamp.valueOf(LocalDateTime.now())
+        );
+    } catch (Exception e) {
+        logger.warn("❌ Error registrando auditoría: {}", e.getMessage());
+    }
 }
+
 
 }

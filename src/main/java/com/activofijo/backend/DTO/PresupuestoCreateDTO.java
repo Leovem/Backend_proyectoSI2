@@ -26,7 +26,6 @@ public class PresupuestoCreateDTO {
 
     private Long proyectoId;
 
-    @NotNull
     private Long empresaId;
 
     // Getters y setters

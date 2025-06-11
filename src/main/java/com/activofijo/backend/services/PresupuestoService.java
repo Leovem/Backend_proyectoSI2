@@ -2,6 +2,7 @@ package com.activofijo.backend.services;
 
 import com.activofijo.backend.dto.PresupuestoCreateDTO;
 import com.activofijo.backend.dto.PresupuestoDTO;
+import com.activofijo.backend.exception.BadRequestException;
 import com.activofijo.backend.models.*;
 import com.activofijo.backend.repository.*;
 import org.springframework.stereotype.Service;
@@ -18,23 +19,30 @@ public class PresupuestoService {
     private final DepartamentoRepository departamentoRepository;
     private final ProyectoRepository proyectoRepository;
     private final EmpresaRepository empresaRepository;
+    private final UsuarioRepository usuarioRepo;
+    private final AuditoriaService auditoriaService;
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ProyectoService.class);
 
     public PresupuestoService(
         PresupuestoRepository presupuestoRepository,
         MonedaRepository monedaRepository,
         DepartamentoRepository departamentoRepository,
         ProyectoRepository proyectoRepository,
-        EmpresaRepository empresaRepository
+        EmpresaRepository empresaRepository,
+        UsuarioRepository usuarioRepo,
+        AuditoriaService auditoriaService
     ) {
         this.presupuestoRepository = presupuestoRepository;
         this.monedaRepository = monedaRepository;
         this.departamentoRepository = departamentoRepository;
         this.proyectoRepository = proyectoRepository;
         this.empresaRepository = empresaRepository;
+        this.usuarioRepo = usuarioRepo;
+        this.auditoriaService = auditoriaService;
     }
 
    @Transactional
-public PresupuestoDTO crearPresupuesto(PresupuestoCreateDTO dto) {
+public PresupuestoDTO crearPresupuesto(PresupuestoCreateDTO dto, String ipCliente, String username) {
     if (presupuestoRepository.existsByNombreAndEmpresa_Id(dto.getNombre(), dto.getEmpresaId())) {
         throw new IllegalArgumentException("Ya existe un presupuesto con ese nombre para esta empresa.");
     }
@@ -57,6 +65,11 @@ public PresupuestoDTO crearPresupuesto(PresupuestoCreateDTO dto) {
             .orElseThrow(() -> new IllegalArgumentException("Proyecto no encontrado"));
     }
 
+    Usuario usuarioCreador = usuarioRepo.findByUsuarioAndEmpresaId(username, dto.getEmpresaId())
+                .orElseThrow(() -> new BadRequestException("Usuario creador no encontrado"));
+
+        Long idCreador = usuarioCreador.getId();
+
     // ✅ Crear la entidad
     Presupuesto presupuesto = new Presupuesto(
         dto.getNombre(),
@@ -69,6 +82,22 @@ public PresupuestoDTO crearPresupuesto(PresupuestoCreateDTO dto) {
         empresa
     );
     Presupuesto guardado = presupuestoRepository.save(presupuesto);
+
+    try {
+            auditoriaService.registrarOperacion(
+                    "presupuestos", // 👈 tabla correcta
+                    "INSERT",
+                    null, // antes del insert no existía
+                    presupuesto, // después
+                    guardado.getId(), // id del nuevo rol creado
+                    idCreador,
+                    dto.getEmpresaId(),
+                    "Creación de Presupuesto",
+                    "Se creó el presupuesto con nombre=" + presupuesto.getNombre() + " por el usuario " + username,
+                    ipCliente);
+        } catch (Exception e) {
+            logger.warn("❌ Error registrando auditoría de creación de rol: {}", e.getMessage());
+        }
 
     // ✅ Convertir y retornar como DTO
     return new PresupuestoDTO(

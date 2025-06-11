@@ -7,9 +7,11 @@ import com.activofijo.backend.exception.NotFoundException;
 import com.activofijo.backend.models.Empresa;
 import com.activofijo.backend.models.Privilegio;
 import com.activofijo.backend.models.Rol;
+import com.activofijo.backend.models.Usuario;
 import com.activofijo.backend.repository.EmpresaRepository;
 import com.activofijo.backend.repository.PrivilegioRepository;
 import com.activofijo.backend.repository.RolRepository;
+import com.activofijo.backend.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,13 +26,20 @@ public class RoleService {
     private final RolRepository rolRepo;
     private final EmpresaRepository empresaRepo;
     private final PrivilegioRepository privilegioRepo;
+    private final UsuarioRepository usuarioRepo;
+    private final AuditoriaService auditoriaService;
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(RoleService.class);
 
     public RoleService(RolRepository rolRepo,
             EmpresaRepository empresaRepo,
-            PrivilegioRepository privilegioRepo) {
+            PrivilegioRepository privilegioRepo,
+            UsuarioRepository usuarioRepo,
+            AuditoriaService auditoriaService) {
         this.rolRepo = rolRepo;
         this.empresaRepo = empresaRepo;
         this.privilegioRepo = privilegioRepo;
+        this.usuarioRepo = usuarioRepo;
+        this.auditoriaService = auditoriaService;
     }
 
     @Transactional(readOnly = true)
@@ -45,13 +54,18 @@ public class RoleService {
     }
 
     @Transactional
-    public RolDTO create(RolDTO dto, List<Long> privilegioIds) {
+    public RolDTO create(RolDTO dto, List<Long> privilegioIds, String ipCliente, String username) {
         if (rolRepo.findByNombreAndEmpresaId(dto.getNombre(), dto.getEmpresaId()).isPresent()) {
             throw new BadRequestException("Ya existe un rol con ese nombre en la empresa");
         }
 
         Empresa empresa = empresaRepo.findById(dto.getEmpresaId())
                 .orElseThrow(() -> new NotFoundException("Empresa no encontrada: " + dto.getEmpresaId()));
+
+        Usuario usuarioCreador = usuarioRepo.findByUsuarioAndEmpresaId(username, dto.getEmpresaId())
+                .orElseThrow(() -> new BadRequestException("Usuario creador no encontrado"));
+
+        Long idCreador = usuarioCreador.getId();
 
         Rol rol = new Rol();
         rol.setNombre(dto.getNombre());
@@ -68,6 +82,23 @@ public class RoleService {
         }
 
         Rol saved = rolRepo.save(rol);
+
+        try {
+            auditoriaService.registrarOperacion(
+                    "roles", // 👈 tabla correcta
+                    "INSERT",
+                    null, // antes del insert no existía
+                    rol, // después
+                    saved.getId(), // id del nuevo rol creado
+                    idCreador,
+                    dto.getEmpresaId(),
+                    "Creación de rol",
+                    "Se creó el rol con nombre=" + rol.getNombre() + "por el usuario " + username,
+                    ipCliente);
+        } catch (Exception e) {
+            logger.warn("❌ Error registrando auditoría de creación de rol: {}", e.getMessage());
+        }
+
         return toDTO(saved);
     }
 
@@ -117,15 +148,7 @@ public class RoleService {
         return toDTO(rol); // convierte a RolDTO
     }
 
-    /*
-     * private RolDTO toDTO(Rol rol) {
-     * RolDTO dto = new RolDTO();
-     * dto.setId(rol.getId());
-     * dto.setNombre(rol.getNombre());
-     * dto.setEmpresaId(rol.getEmpresa().getId());
-     * return dto;
-     * }
-     */
+
     private RolDTO toDTO(Rol rol) {
         RolDTO dto = new RolDTO();
         dto.setId(rol.getId());

@@ -25,15 +25,19 @@ public class UsuarioService {
     private final RolRepository rolRepo;
     private final EmpresaRepository empresaRepo;
     private final PasswordEncoder passwordEncoder;
+    private final AuditoriaService auditoriaService;
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(UsuarioService.class);
 
     public UsuarioService(UsuarioRepository usuarioRepo,
-                          RolRepository rolRepo,
-                          EmpresaRepository empresaRepo,
-                          PasswordEncoder passwordEncoder) {
+            RolRepository rolRepo,
+            EmpresaRepository empresaRepo,
+            PasswordEncoder passwordEncoder,
+            AuditoriaService auditoriaService) {
         this.usuarioRepo = usuarioRepo;
         this.rolRepo = rolRepo;
         this.empresaRepo = empresaRepo;
         this.passwordEncoder = passwordEncoder;
+        this.auditoriaService = auditoriaService;
     }
 
     /**
@@ -42,11 +46,11 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public List<UsuarioDTO> listAll(Long empresaId) {
         empresaRepo.findById(empresaId)
-                   .orElseThrow(() -> new NotFoundException("Empresa no encontrada: " + empresaId));
+                .orElseThrow(() -> new NotFoundException("Empresa no encontrada: " + empresaId));
         return usuarioRepo.findByEmpresaId(empresaId)
-                          .stream()
-                          .map(this::toDTO)
-                          .collect(Collectors.toList());
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -55,11 +59,11 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public List<UsuarioDTO> listActive(Long empresaId) {
         empresaRepo.findById(empresaId)
-                   .orElseThrow(() -> new NotFoundException("Empresa no encontrada: " + empresaId));
+                .orElseThrow(() -> new NotFoundException("Empresa no encontrada: " + empresaId));
         return usuarioRepo.findByEmpresaIdAndActivoTrue(empresaId)
-                          .stream()
-                          .map(this::toDTO)
-                          .collect(Collectors.toList());
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -68,9 +72,9 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public UsuarioDTO findByUsuario(String usuario, Long empresaId) {
         return usuarioRepo.findByUsuarioAndEmpresaId(usuario, empresaId)
-                          .map(this::toDTO)
-                          .orElseThrow(() -> new NotFoundException(
-                              "Usuario '" + usuario + "' no encontrado en empresa " + empresaId));
+                .map(this::toDTO)
+                .orElseThrow(() -> new NotFoundException(
+                        "Usuario '" + usuario + "' no encontrado en empresa " + empresaId));
     }
 
     /**
@@ -79,9 +83,9 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public UsuarioDTO findById(Long id) {
         return usuarioRepo.findById(id)
-                          .map(this::toDTO)
-                          .orElseThrow(() -> new NotFoundException(
-                              "Usuario con id " + id + " no encontrado"));
+                .map(this::toDTO)
+                .orElseThrow(() -> new NotFoundException(
+                        "Usuario con id " + id + " no encontrado"));
     }
 
     /**
@@ -89,19 +93,29 @@ public class UsuarioService {
      * email, contraseña y rol.
      */
     @Transactional
-    public UsuarioDTO update(Long id, UsuarioCreateDTO dto) {
+    public UsuarioDTO update(Long id, UsuarioCreateDTO dto, String ipCliente, String username) {
         Usuario u = usuarioRepo.findById(id)
-            .orElseThrow(() -> new NotFoundException("Usuario con id " + id + " no encontrado"));
+                .orElseThrow(() -> new NotFoundException("Usuario con id " + id + " no encontrado"));
 
         // Validar unicidad si cambian usuario o email
         if (!u.getUsuario().equals(dto.getUsuario())
-            && usuarioRepo.findByUsuarioAndEmpresaId(dto.getUsuario(), u.getEmpresa().getId()).isPresent()) {
+                && usuarioRepo.findByUsuarioAndEmpresaId(dto.getUsuario(), u.getEmpresa().getId()).isPresent()) {
             throw new BadRequestException("Ya existe otro usuario con ese nombre en la empresa");
         }
         if (!u.getEmail().equals(dto.getEmail())
-            && usuarioRepo.findByEmailAndEmpresaId(dto.getEmail(), u.getEmpresa().getId()).isPresent()) {
+                && usuarioRepo.findByEmailAndEmpresaId(dto.getEmail(), u.getEmpresa().getId()).isPresent()) {
             throw new BadRequestException("Ya existe otro usuario con ese email en la empresa");
         }
+
+        Usuario usuarioCreador = usuarioRepo.findByUsuarioAndEmpresaId(username, dto.getEmpresaId())
+                .orElseThrow(() -> new BadRequestException("Usuario creador no encontrado"));
+
+        Long idCreador = usuarioCreador.getId();
+
+        Usuario usuarioAnterior = usuarioRepo.findById(id)
+                .orElseThrow(() -> new NotFoundException("Usuario con id " + id + " no encontrado"));
+        // luego conviértelo a DTO si tu auditoría espera DTOs
+        UsuarioDTO anterior = toDTO(usuarioAnterior);
 
         // Aplicar cambios
         u.setUsuario(dto.getUsuario());
@@ -113,11 +127,28 @@ public class UsuarioService {
         // opcional: permitir cambiar de rol
         if (!u.getRol().getId().equals(dto.getRolId())) {
             Rol rol = rolRepo.findById(dto.getRolId())
-                             .orElseThrow(() -> new NotFoundException("Rol no encontrado: " + dto.getRolId()));
+                    .orElseThrow(() -> new NotFoundException("Rol no encontrado: " + dto.getRolId()));
             u.setRol(rol);
         }
 
         Usuario saved = usuarioRepo.save(u);
+
+        try {
+            auditoriaService.registrarOperacion(
+                    "usuarios",
+                    "UPDATE",
+                    anterior,
+                    usuarioAnterior,
+                    id,
+                    idCreador, // si quieres puedes extraer el usuario logueado también
+                    dto.getEmpresaId(),
+                    "Actualización",
+                    "Se actualizó el usuario con ID=" + id,
+                    ipCliente);
+        } catch (Exception e) {
+            logger.warn("❌ Error registrando auditoría de actualización de usuario: {}", e.getMessage());
+        }
+
         return toDTO(saved);
     }
 
@@ -127,7 +158,7 @@ public class UsuarioService {
     @Transactional
     public void activate(Long id) {
         Usuario u = usuarioRepo.findById(id)
-            .orElseThrow(() -> new NotFoundException("Usuario con id " + id + " no encontrado"));
+                .orElseThrow(() -> new NotFoundException("Usuario con id " + id + " no encontrado"));
         u.setActivo(true);
         usuarioRepo.save(u);
     }
@@ -138,7 +169,7 @@ public class UsuarioService {
     @Transactional
     public void deactivate(Long id) {
         Usuario u = usuarioRepo.findById(id)
-            .orElseThrow(() -> new NotFoundException("Usuario con id " + id + " no encontrado"));
+                .orElseThrow(() -> new NotFoundException("Usuario con id " + id + " no encontrado"));
         u.setActivo(false);
         usuarioRepo.save(u);
     }
