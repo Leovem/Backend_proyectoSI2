@@ -69,8 +69,8 @@ public class StripeController {
 
         SessionCreateParams params = SessionCreateParams.builder()
                 .setMode(SessionCreateParams.Mode.PAYMENT)
-                .setSuccessUrl("https://frontend-af.vercel.app/pago-exitoso")
-                .setCancelUrl("https://frontend-af.vercel.app/pago-cancelado")
+                .setSuccessUrl("https://frontend-proyecto-si-2-285w.vercel.app/pago-exitoso")
+                .setCancelUrl("https://frontend-proyecto-si-2-285w.vercel.app/pago-cancelado")
 
                 .setClientReferenceId("adquisicion-plan")
                 .putMetadata("adquisicion", metadataJson)
