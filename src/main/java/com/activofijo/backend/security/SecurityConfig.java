@@ -57,6 +57,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/pagos/**").permitAll()
                 .requestMatchers("/api/subscriptions/**").permitAll()
                 .requestMatchers("/api/auditoria/**").authenticated()
+                .requestMatchers("/api/depreciacion-activo").permitAll()
+                .requestMatchers("/api/revaluacion-activo").permitAll()
+                .requestMatchers("/api/tasa-depreciacion").permitAll()
 
                 .anyRequest().authenticated()
             )
